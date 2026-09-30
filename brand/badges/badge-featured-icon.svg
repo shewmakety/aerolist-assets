@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="256" height="256">
+<title>aerolist Featured member icon</title>
+<defs>
+<linearGradient id="fei1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#E8405A"/><stop offset="1" stop-color="#A2142C"/></linearGradient>
+<linearGradient id="fei2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFDB7A"/><stop offset="0.45" stop-color="#F2B22E"/><stop offset="0.62" stop-color="#C9860F"/><stop offset="1" stop-color="#F7C64D"/></linearGradient>
+<linearGradient id="fei3" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2C3B7D"/><stop offset="1" stop-color="#141B40"/></linearGradient>
+<linearGradient id="fei4" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFDB7A"/><stop offset="0.45" stop-color="#F2B22E"/><stop offset="0.62" stop-color="#C9860F"/><stop offset="1" stop-color="#F7C64D"/></linearGradient>
+</defs>
+<path d="M271 24.66L448.85 127.34A30 30 0 0 1 463.85 153.32L463.85 358.68A30 30 0 0 1 448.85 384.66L271 487.34A30 30 0 0 1 241 487.34L63.15 384.66A30 30 0 0 1 48.15 358.68L48.15 153.32A30 30 0 0 1 63.15 127.34L241 24.66A30 30 0 0 1 271 24.66Z" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="24" stroke-linejoin="round"/>
+<path d="M271 24.66L448.85 127.34A30 30 0 0 1 463.85 153.32L463.85 358.68A30 30 0 0 1 448.85 384.66L271 487.34A30 30 0 0 1 241 487.34L63.15 384.66A30 30 0 0 1 48.15 358.68L48.15 153.32A30 30 0 0 1 63.15 127.34L241 24.66A30 30 0 0 1 271 24.66Z" fill="url(#fei1)"/>
+<path d="M268 58.93L420.67 147.07A24 24 0 0 1 432.67 167.86L432.67 344.14A24 24 0 0 1 420.67 364.93L268 453.07A24 24 0 0 1 244 453.07L91.33 364.93A24 24 0 0 1 79.33 344.14L79.33 167.86A24 24 0 0 1 91.33 147.07L244 58.93A24 24 0 0 1 268 58.93Z" fill="url(#fei2)"/>
+<path d="M267 66.35L414.74 151.65A22 22 0 0 1 425.74 170.7L425.74 341.3A22 22 0 0 1 414.74 360.35L267 445.65A22 22 0 0 1 245 445.65L97.26 360.35A22 22 0 0 1 86.26 341.3L86.26 170.7A22 22 0 0 1 97.26 151.65L245 66.35A22 22 0 0 1 267 66.35Z" fill="url(#fei3)"/>
+<path d="M262.07 172.23L281.91 225.29A3.24 3.24 0 0 0 284.8 227.4L341.4 229.87A6.48 6.48 0 0 1 345.15 241.41L300.82 276.68A3.24 3.24 0 0 0 299.71 280.08L314.85 334.67A6.48 6.48 0 0 1 305.03 341.81L257.79 310.54A3.24 3.24 0 0 0 254.21 310.54L206.97 341.81A6.48 6.48 0 0 1 197.15 334.67L212.29 280.08A3.24 3.24 0 0 0 211.18 276.68L166.85 241.41A6.48 6.48 0 0 1 170.6 229.87L227.2 227.4A3.24 3.24 0 0 0 230.09 225.29L249.93 172.23A6.48 6.48 0 0 1 262.07 172.23Z" fill="url(#fei4)"/>
+</svg>

@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="256" height="256">
+<title>aerolist Platform member icon</title>
+<defs>
+<linearGradient id="pli1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#E8405A"/><stop offset="1" stop-color="#A2142C"/></linearGradient>
+<linearGradient id="pli2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFDB7A"/><stop offset="0.45" stop-color="#F2B22E"/><stop offset="0.62" stop-color="#C9860F"/><stop offset="1" stop-color="#F7C64D"/></linearGradient>
+<linearGradient id="pli3" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#223067"/><stop offset="1" stop-color="#0E1434"/></linearGradient>
+<linearGradient id="pli4" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFDB7A"/><stop offset="0.45" stop-color="#F2B22E"/><stop offset="0.62" stop-color="#C9860F"/><stop offset="1" stop-color="#F7C64D"/></linearGradient>
+<linearGradient id="pli5" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2C3B7D"/><stop offset="1" stop-color="#141B40"/></linearGradient>
+<linearGradient id="pli6" gradientUnits="userSpaceOnUse" x1="0" y1="308" x2="0" y2="466"><stop offset="0" stop-color="#FFDB7A" stop-opacity="0.0"/><stop offset="0.35" stop-color="#FFDB7A" stop-opacity="0.7"/><stop offset="1" stop-color="#F2B22E"/></linearGradient>
+<clipPath id="pli7"><path d="M134 57L378 57Q393 57 393 72L393 277.25C393 355.84 313.54 413.48 256 451.9C198.46 413.48 119 355.84 119 277.25L119 72Q119 57 134 57Z"/></clipPath>
+<linearGradient id="pli8" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFDB7A"/><stop offset="0.45" stop-color="#F2B22E"/><stop offset="0.62" stop-color="#C9860F"/><stop offset="1" stop-color="#F7C64D"/></linearGradient>
+<linearGradient id="pli9" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFDB7A"/><stop offset="0.45" stop-color="#F2B22E"/><stop offset="0.62" stop-color="#C9860F"/><stop offset="1" stop-color="#F7C64D"/></linearGradient>
+</defs>
+<path d="M134 38L378 38Q412 38 412 72L412 282C412 374.7 321.52 442.68 256 488C190.48 442.68 100 374.7 100 282L100 72Q100 38 134 38Z" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="24" stroke-linejoin="round"/>
+<path d="M106 122L36 122L54.48 154L36 186L106 186Z" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="24" stroke-linejoin="round"/>
+<path d="M406 122L476 122L457.52 154L476 186L406 186Z" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="24" stroke-linejoin="round"/>
+<path d="M80 108L432 108L432 172L80 172Z" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="24" stroke-linejoin="round"/>
+<path d="M134 38L378 38Q412 38 412 72L412 282C412 374.7 321.52 442.68 256 488C190.48 442.68 100 374.7 100 282L100 72Q100 38 134 38Z" fill="url(#pli2)"/>
+<path d="M134 44L378 44Q406 44 406 72L406 280.5C406 368.75 319 433.46 256 476.6C193 433.46 106 368.75 106 280.5L106 72Q106 44 134 44Z" fill="url(#pli3)"/>
+<path d="M134 51L378 51Q399 51 399 72L399 278.75C399 361.8 316.06 422.7 256 463.3C195.94 422.7 113 361.8 113 278.75L113 72Q113 51 134 51Z" fill="url(#pli4)"/>
+<path d="M134 57L378 57Q393 57 393 72L393 277.25C393 355.84 313.54 413.48 256 451.9C198.46 413.48 119 355.84 119 277.25L119 72Q119 57 134 57Z" fill="url(#pli5)"/>
+<g clip-path="url(#pli7)"><path d="M256 466L104.43 421.39L111.21 402.74ZM256 466L144.93 410.87L152.72 397.38ZM256 466L128.83 372.24L141.58 357.04ZM256 466L170.49 376.2L182.42 366.19ZM256 466L168.56 334.4L185.75 324.48ZM256 466L206.36 352.37L220.99 347.05ZM256 466L218.85 312.43L238.39 308.98ZM256 466L248.21 342.24L263.79 342.24ZM256 466L273.61 308.98L293.15 312.43ZM256 466L291.01 347.05L305.64 352.37ZM256 466L326.25 324.48L343.44 334.4ZM256 466L329.58 366.19L341.51 376.2ZM256 466L370.42 357.04L383.17 372.24ZM256 466L359.28 397.38L367.07 410.87ZM256 466L400.79 402.74L407.57 421.39Z" fill="url(#pli6)"/><path d="M226 470A30 30 0 1 0 286 470A30 30 0 1 0 226 470Z" fill="url(#pli8)"/></g>
+<path d="M106 122L36 122L54.48 154L36 186L106 186Z" fill="#A2142C"/>
+<path d="M80 172L106 186L106 172Z" fill="#6E0C1D"/>
+<path d="M406 122L476 122L457.52 154L476 186L406 186Z" fill="#A2142C"/>
+<path d="M432 172L406 186L406 172Z" fill="#6E0C1D"/>
+<path d="M80 108L432 108L432 172L80 172Z" fill="url(#pli1)"/>
+<path d="M80 114H432V117H80Z M80 163H432V166H80Z" fill="#F2B22E" opacity="0.9"/>
+<path d="M260.83 216.93L276.63 259.18A2.58 2.58 0 0 0 278.94 260.85L324 262.82A5.16 5.16 0 0 1 326.99 272.02L291.69 300.1A2.58 2.58 0 0 0 290.81 302.81L302.86 346.28A5.16 5.16 0 0 1 295.04 351.96L257.42 327.06A2.58 2.58 0 0 0 254.58 327.06L216.96 351.96A5.16 5.16 0 0 1 209.14 346.28L221.19 302.81A2.58 2.58 0 0 0 220.31 300.1L185.01 272.02A5.16 5.16 0 0 1 188 262.82L233.06 260.85A2.58 2.58 0 0 0 235.37 259.18L251.17 216.93A5.16 5.16 0 0 1 260.83 216.93Z" fill="url(#pli9)"/>
+<path d="M206.73 129.95L209.12 136.34A0.39 0.39 0 0 0 209.47 136.59L216.28 136.89A0.78 0.78 0 0 1 216.73 138.28L211.39 142.53A0.39 0.39 0 0 0 211.26 142.94L213.08 149.51A0.78 0.78 0 0 1 211.9 150.37L206.22 146.6A0.39 0.39 0 0 0 205.78 146.6L200.1 150.37A0.78 0.78 0 0 1 198.92 149.51L200.74 142.94A0.39 0.39 0 0 0 200.61 142.53L195.27 138.28A0.78 0.78 0 0 1 195.72 136.89L202.53 136.59A0.39 0.39 0 0 0 202.88 136.34L205.27 129.95A0.78 0.78 0 0 1 206.73 129.95Z" fill="url(#pli9)"/>
+<path d="M256.96 126.56L260.08 134.91A0.51 0.51 0 0 0 260.53 135.24L269.44 135.63A1.02 1.02 0 0 1 270.03 137.44L263.05 143A0.51 0.51 0 0 0 262.88 143.53L265.26 152.12A1.02 1.02 0 0 1 263.72 153.25L256.28 148.33A0.51 0.51 0 0 0 255.72 148.33L248.28 153.25A1.02 1.02 0 0 1 246.74 152.12L249.12 143.53A0.51 0.51 0 0 0 248.95 143L241.97 137.44A1.02 1.02 0 0 1 242.56 135.63L251.47 135.24A0.51 0.51 0 0 0 251.92 134.91L255.04 126.56A1.02 1.02 0 0 1 256.96 126.56Z" fill="url(#pli9)"/>
+<path d="M306.73 129.95L309.12 136.34A0.39 0.39 0 0 0 309.47 136.59L316.28 136.89A0.78 0.78 0 0 1 316.73 138.28L311.39 142.53A0.39 0.39 0 0 0 311.26 142.94L313.08 149.51A0.78 0.78 0 0 1 311.9 150.37L306.22 146.6A0.39 0.39 0 0 0 305.78 146.6L300.1 150.37A0.78 0.78 0 0 1 298.92 149.51L300.74 142.94A0.39 0.39 0 0 0 300.61 142.53L295.27 138.28A0.78 0.78 0 0 1 295.72 136.89L302.53 136.59A0.39 0.39 0 0 0 302.88 136.34L305.27 129.95A0.78 0.78 0 0 1 306.73 129.95Z" fill="url(#pli9)"/>
+<path d="M156 206Q158.56 219.44 172 222Q158.56 224.56 156 238Q153.44 224.56 140 222Q153.44 219.44 156 206Z" fill="url(#pli9)"/>
+<path d="M358 216Q359.92 226.08 370 228Q359.92 229.92 358 240Q356.08 229.92 346 228Q356.08 226.08 358 216Z" fill="url(#pli9)"/>
+</svg>
