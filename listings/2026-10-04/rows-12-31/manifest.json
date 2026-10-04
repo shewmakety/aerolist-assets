@@ -1,0 +1,304 @@
+{
+  "captured": "2026-10-04",
+  "spreadsheetRows": "12–31",
+  "files": [
+    {
+      "row": 12,
+      "sharedRows": [
+        12
+      ],
+      "company": "702 HELICOPTER LLC",
+      "slot": "logo",
+      "source": "https://702aviation.com/wp-content/uploads/2026/08/702-aviation-logo.png",
+      "sourcePage": "https://702aviation.com/",
+      "path": "listings/2026-10-04/rows-12-31/702-helicopter-llc/logo.png",
+      "sha256": "7dc375cdad182f6b87b31dec3a2cac364f7ee5ff2911d63c44d16379c433758d",
+      "rawUrl": "https://raw.githubusercontent.com/shewmakety/aerolist-assets/main/listings/2026-10-04/rows-12-31/702-helicopter-llc/logo.png"
+    },
+    {
+      "row": 12,
+      "sharedRows": [
+        12
+      ],
+      "company": "702 HELICOPTER LLC",
+      "slot": "screenshot",
+      "source": "https://storage.googleapis.com/firecrawl-scrape-media/screenshot-4b2d55d4-4ba1-42b2-a274-a231bfcbeb31.png",
+      "sourcePage": "https://702aviation.com/",
+      "path": "listings/2026-10-04/rows-12-31/702-helicopter-llc/cover.jpg",
+      "sha256": "5a94c1e22d820cd4ad2859aab7dd37fe5290590975b1707aa680464e97a73dbc",
+      "rawUrl": "https://raw.githubusercontent.com/shewmakety/aerolist-assets/main/listings/2026-10-04/rows-12-31/702-helicopter-llc/cover.jpg"
+    },
+    {
+      "row": 13,
+      "sharedRows": [
+        13
+      ],
+      "company": "A & S HELICOPTERS INC",
+      "slot": "logo",
+      "source": "https://img1.wsimg.com/isteam/ip/7a938f3e-f6d2-41d5-bbd0-c033618f887f/A%20%26%20S%20Helicopters%20%26%20Logo-%20large-8498a15.jpg",
+      "sourcePage": "https://helicopterservicecenter.com/",
+      "path": "listings/2026-10-04/rows-12-31/a-s-helicopters-inc/logo.png",
+      "sha256": "dd39600fc123b70b86119c21d3fa3799e62f2672d0b6ac2f4cfc6ac94d6f9d28",
+      "rawUrl": "https://raw.githubusercontent.com/shewmakety/aerolist-assets/main/listings/2026-10-04/rows-12-31/a-s-helicopters-inc/logo.png"
+    },
+    {
+      "row": 13,
+      "sharedRows": [
+        13
+      ],
+      "company": "A & S HELICOPTERS INC",
+      "slot": "screenshot",
+      "source": "https://storage.googleapis.com/firecrawl-scrape-media/screenshot-94a5be70-99e6-4d97-a74e-2fd3d047ddd0.png",
+      "sourcePage": "https://helicopterservicecenter.com/",
+      "path": "listings/2026-10-04/rows-12-31/a-s-helicopters-inc/cover.jpg",
+      "sha256": "247f4640d8ba189fc279a8fcf1a8e8466886f4eb9a1fa437755767a723aaa69e",
+      "rawUrl": "https://raw.githubusercontent.com/shewmakety/aerolist-assets/main/listings/2026-10-04/rows-12-31/a-s-helicopters-inc/cover.jpg"
+    },
+    {
+      "row": 14,
+      "sharedRows": [
+        14
+      ],
+      "company": "A GOLDEN REPAIR",
+      "slot": "logo",
+      "source": "https://agoldenrepair.net/wp-content/uploads/2017/08/cropped-AGoldenRepair-logo-1.png",
+      "sourcePage": "https://agoldenrepair.net/",
+      "path": "listings/2026-10-04/rows-12-31/a-golden-repair/logo.png",
+      "sha256": "7dd4aa25aa0a170a57b903b8f77fce5882df8a04d64325fa9241a9adbac69c55",
+      "rawUrl": "https://raw.githubusercontent.com/shewmakety/aerolist-assets/main/listings/2026-10-04/rows-12-31/a-golden-repair/logo.png"
+    },
+    {
+      "row": 14,
+      "sharedRows": [
+        14
+      ],
+      "company": "A GOLDEN REPAIR",
+      "slot": "screenshot",
+      "source": "https://storage.googleapis.com/firecrawl-scrape-media/screenshot-4afd205c-10b5-43a2-9488-75e60270259c.png",
+      "sourcePage": "https://agoldenrepair.net/",
+      "path": "listings/2026-10-04/rows-12-31/a-golden-repair/cover.jpg",
+      "sha256": "9ef3fc2e52ccc7884239ecc29eeecde1ef1552def8b03c6fe73b8e1707165ba6",
+      "rawUrl": "https://raw.githubusercontent.com/shewmakety/aerolist-assets/main/listings/2026-10-04/rows-12-31/a-golden-repair/cover.jpg"
+    },
+    {
+      "row": 16,
+      "sharedRows": [
+        16
+      ],
+      "company": "A PLUS AVIONICS CORP.",
+      "slot": "logo",
+      "source": "https://imagedelivery.net/0PAwcuu-YAI080d1i7_6-A/35da9ad6-4884-4950-f131-666f56d29f00/1920x692",
+      "sourcePage": "https://www.avionteq.com/",
+      "path": "listings/2026-10-04/rows-12-31/a-plus-avionics-corp/logo.png",
+      "sha256": "035ed440ec5f648282b3cf280bcc0b58a149a2435af2d5d660b7494afc3b1717",
+      "rawUrl": "https://raw.githubusercontent.com/shewmakety/aerolist-assets/main/listings/2026-10-04/rows-12-31/a-plus-avionics-corp/logo.png"
+    },
+    {
+      "row": 16,
+      "sharedRows": [
+        16
+      ],
+      "company": "A PLUS AVIONICS CORP.",
+      "slot": "screenshot",
+      "source": "https://storage.googleapis.com/firecrawl-scrape-media/screenshot-62611fb2-5bb4-4a39-a5dd-c34ced6f78eb.png",
+      "sourcePage": "https://www.avionteq.com/",
+      "path": "listings/2026-10-04/rows-12-31/a-plus-avionics-corp/cover.jpg",
+      "sha256": "1cfd121c3a9189c42519c97cd99802cf72711829fb5cd5a81054d621349598ae",
+      "rawUrl": "https://raw.githubusercontent.com/shewmakety/aerolist-assets/main/listings/2026-10-04/rows-12-31/a-plus-avionics-corp/cover.jpg"
+    },
+    {
+      "row": 17,
+      "sharedRows": [
+        17
+      ],
+      "company": "A PROFESSIONAL AVIATION SERVICES CORP.",
+      "slot": "logo",
+      "source": "https://cdn.prod.website-files.com/68a4800df13b016e07768797/68bf5225934bc79e0207eead_APASDAS-Logo-Final-web-01%203.avif",
+      "sourcePage": "https://www.apas1.com/",
+      "path": "listings/2026-10-04/rows-12-31/a-professional-aviation-services-corp/logo.png",
+      "sha256": "84b5a01467d8cd6d65cc2014a69650acc915800b25422bc0bf6ef53b69f9782f",
+      "rawUrl": "https://raw.githubusercontent.com/shewmakety/aerolist-assets/main/listings/2026-10-04/rows-12-31/a-professional-aviation-services-corp/logo.png"
+    },
+    {
+      "row": 17,
+      "sharedRows": [
+        17
+      ],
+      "company": "A PROFESSIONAL AVIATION SERVICES CORP.",
+      "slot": "screenshot",
+      "source": "https://storage.googleapis.com/firecrawl-scrape-media/screenshot-dad317ee-70ee-44f8-afa9-acc87b07ab12.png",
+      "sourcePage": "https://www.apas1.com/",
+      "path": "listings/2026-10-04/rows-12-31/a-professional-aviation-services-corp/cover.jpg",
+      "sha256": "923f5790573a4bee53a2a451c235aa221c77e74e0aa264172d4c48a015a0571a",
+      "rawUrl": "https://raw.githubusercontent.com/shewmakety/aerolist-assets/main/listings/2026-10-04/rows-12-31/a-professional-aviation-services-corp/cover.jpg"
+    },
+    {
+      "row": 19,
+      "sharedRows": [
+        19
+      ],
+      "company": "A. E. S. AIRPLANE - EQUIPMENT & SERVICES GMBH",
+      "slot": "logo",
+      "source": "https://www.aes-services.de/files/Bilder_aes/aes_logo_light.png",
+      "sourcePage": "https://www.aes-services.de/",
+      "path": "listings/2026-10-04/rows-12-31/a-e-s-airplane-equipment-services-gmbh/logo.png",
+      "sha256": "1bc6e91949d8bac30c512ec7798e56187527103d2df87c6afe4f64787f522f19",
+      "rawUrl": "https://raw.githubusercontent.com/shewmakety/aerolist-assets/main/listings/2026-10-04/rows-12-31/a-e-s-airplane-equipment-services-gmbh/logo.png"
+    },
+    {
+      "row": 19,
+      "sharedRows": [
+        19
+      ],
+      "company": "A. E. S. AIRPLANE - EQUIPMENT & SERVICES GMBH",
+      "slot": "screenshot",
+      "source": "https://storage.googleapis.com/firecrawl-scrape-media/screenshot-57588a6c-9c0f-4a47-89ba-140658ce0a72.png",
+      "sourcePage": "https://www.aes-services.de/",
+      "path": "listings/2026-10-04/rows-12-31/a-e-s-airplane-equipment-services-gmbh/cover.jpg",
+      "sha256": "dd6755810091d4e0d91e560190f27130cc7a7edcb3654ebe259a3ed37aae0ca9",
+      "rawUrl": "https://raw.githubusercontent.com/shewmakety/aerolist-assets/main/listings/2026-10-04/rows-12-31/a-e-s-airplane-equipment-services-gmbh/cover.jpg"
+    },
+    {
+      "row": 21,
+      "sharedRows": [
+        21
+      ],
+      "company": "A&P INTERNATIONAL SERVICES, S.A.P.I. DE C.V.",
+      "slot": "logo",
+      "source": "https://aisg.aero/wp-content/uploads/2025/02/logoAISG.png",
+      "sourcePage": "https://aisg.aero/",
+      "path": "listings/2026-10-04/rows-12-31/a-p-international-services-s-a-p-i-de-c-v/logo.png",
+      "sha256": "707a06a1441395f6a500fc5074e29b4357a625c6d11f62e77c3cca8ac476fa20",
+      "rawUrl": "https://raw.githubusercontent.com/shewmakety/aerolist-assets/main/listings/2026-10-04/rows-12-31/a-p-international-services-s-a-p-i-de-c-v/logo.png"
+    },
+    {
+      "row": 21,
+      "sharedRows": [
+        21
+      ],
+      "company": "A&P INTERNATIONAL SERVICES, S.A.P.I. DE C.V.",
+      "slot": "screenshot",
+      "source": "https://storage.googleapis.com/firecrawl-scrape-media/screenshot-d09f1ff6-f48e-4162-99b7-745d27b11c2a.png",
+      "sourcePage": "https://aisg.aero/",
+      "path": "listings/2026-10-04/rows-12-31/a-p-international-services-s-a-p-i-de-c-v/cover.jpg",
+      "sha256": "c0124e794ce651eb5847d3337c43742c3d38b7dc230eb8f5ebcec353bba230f2",
+      "rawUrl": "https://raw.githubusercontent.com/shewmakety/aerolist-assets/main/listings/2026-10-04/rows-12-31/a-p-international-services-s-a-p-i-de-c-v/cover.jpg"
+    },
+    {
+      "row": 22,
+      "sharedRows": [
+        22
+      ],
+      "company": "A&P PLUS STRUCTURES INC",
+      "slot": "logo",
+      "source": "https://www.applus145.com/assets/imgs/Logon.png",
+      "sourcePage": "https://www.applus145.com/",
+      "path": "listings/2026-10-04/rows-12-31/a-p-plus-structures-inc/logo.png",
+      "sha256": "21006f2d89554de7bf56ce6179d29a957e6c378c653ce68bd90a2a8d15b02825",
+      "rawUrl": "https://raw.githubusercontent.com/shewmakety/aerolist-assets/main/listings/2026-10-04/rows-12-31/a-p-plus-structures-inc/logo.png"
+    },
+    {
+      "row": 22,
+      "sharedRows": [
+        22
+      ],
+      "company": "A&P PLUS STRUCTURES INC",
+      "slot": "screenshot",
+      "source": "https://storage.googleapis.com/firecrawl-scrape-media/screenshot-bae4bf88-9ef6-4f7b-ab9c-7d586605f327.png",
+      "sourcePage": "https://www.applus145.com/",
+      "path": "listings/2026-10-04/rows-12-31/a-p-plus-structures-inc/cover.jpg",
+      "sha256": "30b0411bf294df8e0a6b041a6c1e2521b150580e7b9a180473a0f657c01f2943",
+      "rawUrl": "https://raw.githubusercontent.com/shewmakety/aerolist-assets/main/listings/2026-10-04/rows-12-31/a-p-plus-structures-inc/cover.jpg"
+    },
+    {
+      "row": 23,
+      "sharedRows": [
+        23
+      ],
+      "company": "AAL LTD.",
+      "slot": "logo",
+      "source": "https://cdn.prod.website-files.com/677ae7389fa4fa4e1b1172c2/677afc39458ca4e6bbfaf460_aal-logo.svg",
+      "sourcePage": "https://www.aal.aero/",
+      "path": "listings/2026-10-04/rows-12-31/aal-ltd/logo.png",
+      "sha256": "5d500066d31ec5c0d26d9493231b564fac9b597f4c47dee6a662d7f279392d98",
+      "rawUrl": "https://raw.githubusercontent.com/shewmakety/aerolist-assets/main/listings/2026-10-04/rows-12-31/aal-ltd/logo.png"
+    },
+    {
+      "row": 23,
+      "sharedRows": [
+        23
+      ],
+      "company": "AAL LTD.",
+      "slot": "screenshot",
+      "source": "https://storage.googleapis.com/firecrawl-scrape-media/screenshot-6c35dea4-d840-4e53-8e9b-a8aef054ddb3.png",
+      "sourcePage": "https://www.aal.aero/",
+      "path": "listings/2026-10-04/rows-12-31/aal-ltd/cover.jpg",
+      "sha256": "bff9db64ce46b85f82be232c65857b296335acd9504dbf4dbe18617fdd9917f6",
+      "rawUrl": "https://raw.githubusercontent.com/shewmakety/aerolist-assets/main/listings/2026-10-04/rows-12-31/aal-ltd/cover.jpg"
+    },
+    {
+      "row": 24,
+      "sharedRows": [
+        24
+      ],
+      "company": "AALBERTS SURFACE TECHNOLOGIES AB INC",
+      "slot": "logo",
+      "source": "https://www.aalberts-st.com/wp-content/uploads/2020/11/group-26.svg",
+      "sourcePage": "https://www.aalberts-st.com/",
+      "path": "listings/2026-10-04/rows-12-31/aalberts-surface-technologies-ab-inc/logo.png",
+      "sha256": "c49e775f3c2e7ec96f8bed2d1c2ba6fa283ab0d143b4bd1b85a7265057293ef7",
+      "rawUrl": "https://raw.githubusercontent.com/shewmakety/aerolist-assets/main/listings/2026-10-04/rows-12-31/aalberts-surface-technologies-ab-inc/logo.png"
+    },
+    {
+      "row": 24,
+      "sharedRows": [
+        24
+      ],
+      "company": "AALBERTS SURFACE TECHNOLOGIES AB INC",
+      "slot": "screenshot",
+      "source": "https://storage.googleapis.com/firecrawl-scrape-media/screenshot-59ab51be-6ce1-4758-b571-4e7ed96e29c9.png",
+      "sourcePage": "https://www.aalberts-st.com/",
+      "path": "listings/2026-10-04/rows-12-31/aalberts-surface-technologies-ab-inc/cover.jpg",
+      "sha256": "4ff17191f867603bb19d00d96454659dbd12aa42fd07da2e22733e221c2e8e9c",
+      "rawUrl": "https://raw.githubusercontent.com/shewmakety/aerolist-assets/main/listings/2026-10-04/rows-12-31/aalberts-surface-technologies-ab-inc/cover.jpg"
+    },
+    {
+      "row": 25,
+      "sharedRows": [
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31
+      ],
+      "company": "AAR AIRCRAFT COMPONENT SERVICES",
+      "slot": "logo",
+      "source": "https://www.aarcorp.com/globalassets/navigation/aar-logo-color.svg",
+      "sourcePage": "https://www.aarcorp.com/",
+      "path": "listings/2026-10-04/rows-12-31/aar/logo.png",
+      "sha256": "1396e11c085b783fc26c6ebf9a2c7fe13c387a59ddab2719722ff9e29fdebeb8",
+      "rawUrl": "https://raw.githubusercontent.com/shewmakety/aerolist-assets/main/listings/2026-10-04/rows-12-31/aar/logo.png"
+    },
+    {
+      "row": 25,
+      "sharedRows": [
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31
+      ],
+      "company": "AAR AIRCRAFT COMPONENT SERVICES",
+      "slot": "screenshot",
+      "source": "https://storage.googleapis.com/firecrawl-scrape-media/screenshot-d209323c-b438-4304-aa96-cae9b69e90cf.png",
+      "sourcePage": "https://www.aarcorp.com/",
+      "path": "listings/2026-10-04/rows-12-31/aar/cover.jpg",
+      "sha256": "6a0b5468b4c3c878b48142a3e3a6b79a17c26e7e36a4acac086ba44a326eb0bb",
+      "rawUrl": "https://raw.githubusercontent.com/shewmakety/aerolist-assets/main/listings/2026-10-04/rows-12-31/aar/cover.jpg"
+    }
+  ]
+}
