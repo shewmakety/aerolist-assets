@@ -1,0 +1,103 @@
+{
+  "manifest": "test-20-rows47-66-public-logos.json",
+  "results": [
+    {
+      "row": 48,
+      "kind": "logo",
+      "source": "https://www.avmxpros.com/wp-content/uploads/2024/09/AmPFLogoTransparent-3.png",
+      "path": "listings/2026-10-04/batch-47-66/row-48/logo.png",
+      "status": "preserved",
+      "bytes": 18876,
+      "sha256": "dd679efea3d506a5db64b2292014a65a530a87056b22b5587599fdebf78afa2f",
+      "content_type": "image/png"
+    },
+    {
+      "row": 49,
+      "kind": "logo",
+      "source": "https://aberdeenflyingservice.com/wp-content/uploads/fly-logo_02-1.png",
+      "path": "listings/2026-10-04/batch-47-66/row-49/logo.png",
+      "status": "preserved",
+      "bytes": 18457,
+      "sha256": "b7aa4ed85dac12b3903ff64075a351b2864fa811b76b71dcd54c6b9b0cdd1d49",
+      "content_type": "image/png"
+    },
+    {
+      "row": 50,
+      "kind": "logo",
+      "source": "https://www.ablsrl.com/wp/wp-content/uploads/2018/12/ABL-Logo-01-e1686386531617.png",
+      "path": "listings/2026-10-04/batch-47-66/row-50/logo.png",
+      "status": "preserved",
+      "bytes": 31302,
+      "sha256": "e6414f2bb736d4c422d94581b4b9a0cc59f3fc56554115de7a7f46edf5125985",
+      "content_type": "image/png"
+    },
+    {
+      "row": 52,
+      "kind": "logo",
+      "source": "https://www.ableaerospace.com/wp-content/uploads/2023/12/able_aerospace_logo.png",
+      "path": "listings/2026-10-04/batch-47-66/row-52/logo.png",
+      "status": "preserved",
+      "bytes": 19680,
+      "sha256": "0fed3dedf95f3020aa0f09a7b46123830396cbf1873040d3b4799a451708b892",
+      "content_type": "image/png"
+    },
+    {
+      "row": 55,
+      "kind": "logo",
+      "source": "https://assets.cdn.filesafe.space/tPbkW1cNuwRs8i8vZk1Y/media/6a99a498a6e92866ec306dcf.png",
+      "path": "listings/2026-10-04/batch-47-66/row-55/logo.png",
+      "status": "preserved",
+      "bytes": 415721,
+      "sha256": "8c2981c35f9193ea6096c55c37c683eea1092191c5f5356830c28b77d2470fdb",
+      "content_type": "image/png"
+    },
+    {
+      "row": 59,
+      "kind": "logo",
+      "source": "https://www.absoluteaviationllc.com/zupload/site-options/absolute-new-logo1.png",
+      "path": "listings/2026-10-04/batch-47-66/row-59/logo.png",
+      "status": "preserved",
+      "bytes": 5956,
+      "sha256": "991cceee3bcf307ef3dc70aee1f1a2966a1502cf2c70455904fbf5aca4a905c0",
+      "content_type": "image/png"
+    },
+    {
+      "row": 60,
+      "kind": "logo",
+      "source": "https://wencor.com/wp-content/uploads/2026/01/WencorMRO_AbsoluteAviationAWC_Horizontal_Reverse.png",
+      "path": "listings/2026-10-04/batch-47-66/row-60/logo.png",
+      "status": "preserved",
+      "bytes": 15596,
+      "sha256": "bc027ed6b0ab05364239c5beeaa03866f863e7d3ea4ef0b95b53a754e57ae4c3",
+      "content_type": "image/png"
+    },
+    {
+      "row": 61,
+      "kind": "logo",
+      "source": "https://absoluteaviation.co.za/wp-content/uploads/2020/09/KS-_-AAG_MAIN-LOGO_SEPTEMBER-2020.png",
+      "path": "listings/2026-10-04/batch-47-66/row-61/logo.png",
+      "status": "error",
+      "error": "HTTP Error 403: Forbidden"
+    },
+    {
+      "row": 63,
+      "kind": "logo",
+      "source": "https://ada.ae/wp-content/uploads/2020/04/Logo-2-1.png",
+      "path": "listings/2026-10-04/batch-47-66/row-63/logo.png",
+      "status": "preserved",
+      "bytes": 159807,
+      "sha256": "f6186d5112486f6b51edba4769b05b4103d41cbc799972388f2df1d4a6aa5f8c",
+      "content_type": "image/png"
+    },
+    {
+      "row": 66,
+      "kind": "logo",
+      "source": "https://acc-columbiajet.com/wp-content/uploads/2025/06/acc-jet_service-logo-white-300x128-1.png",
+      "path": "listings/2026-10-04/batch-47-66/row-66/logo.png",
+      "status": "preserved",
+      "bytes": 14840,
+      "sha256": "f0d7731da22c044c010f6ab41951109252946d91d0005bba9e3f05235bcba5fe",
+      "content_type": "image/png"
+    }
+  ]
+}
