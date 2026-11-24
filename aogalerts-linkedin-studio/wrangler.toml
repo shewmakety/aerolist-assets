@@ -1,0 +1,10 @@
+name = "aogalerts-linkedin-studio"
+main = "worker.js"
+compatibility_date = "2026-11-24"
+
+# Static files in this folder. No account id and no token.
+# Deploy later with: npx wrangler deploy
+[assets]
+directory = "."
+binding = "ASSETS"
+run_worker_first = true
