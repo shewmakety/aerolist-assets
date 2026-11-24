@@ -1,0 +1,10 @@
+tests
+scripts
+samples
+node_modules
+*.md
+.gitignore
+wrangler.toml
+worker.js
+package.json
+package-lock.json

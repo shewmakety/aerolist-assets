@@ -1,0 +1,11 @@
+{
+  "name": "aogalerts-linkedin-studio",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check": "node tests/verify.mjs"
+  },
+  "devDependencies": {
+    "playwright": "1.49.1"
+  }
+}

@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AOG Alerts LinkedIn Publishing Studio</title>
+  <link rel="icon" href="logos/aog-alerts-tail.png">
+  <link rel="stylesheet" href="studio.css">
+</head>
+<body>
+  <div class="shell">
+    <aside class="panel">
+      <header class="brand">
+        <img src="logos/aog-alerts-logo.png" alt="AOG Alerts">
+        <div>
+          <h1>LinkedIn Publishing Studio</h1>
+          <p>Corporate posts for AOG Alerts. Not for alert posts.</p>
+        </div>
+      </header>
+
+      <section>
+        <h2>Format</h2>
+        <div class="format-list" role="radiogroup" aria-label="Format">
+          <button type="button" data-format="announcement" aria-pressed="true"><span>01</span> Announcement</button>
+          <button type="button" data-format="statistic" aria-pressed="false"><span>02</span> Statistic</button>
+          <button type="button" data-format="insight" aria-pressed="false"><span>03</span> Insight / Opinion</button>
+          <button type="button" data-format="story" aria-pressed="false"><span>04</span> Aviation Story</button>
+          <button type="button" data-format="educational" aria-pressed="false"><span>05</span> Educational</button>
+        </div>
+      </section>
+
+      <section>
+        <h2>Size</h2>
+        <div class="size-list" role="radiogroup" aria-label="Size">
+          <button type="button" data-size="landscape" aria-pressed="true">1200 × 628</button>
+          <button type="button" data-size="square" aria-pressed="false">1080 × 1080</button>
+          <button type="button" data-size="portrait" aria-pressed="false">1080 × 1350</button>
+        </div>
+      </section>
+
+      <section>
+        <h2>Copy</h2>
+        <label for="seriesPreset">Series</label>
+        <select id="seriesPreset"></select>
+        <label for="series">Series label</label>
+        <input id="series" maxlength="36" autocomplete="off">
+        <p class="hint">One to three words. The image shows this in uppercase.</p>
+
+        <div id="headlineField">
+          <label for="headline">Headline</label>
+          <textarea id="headline" rows="3"></textarea>
+          <p class="hint">Wrap one phrase in *asterisks* to mark it red.</p>
+        </div>
+        <div id="headlineSizeField">
+          <label for="headlineSize"><span id="headlineSizeLabel">Headline size</span> <output id="headlineSizeOut"></output></label>
+          <input id="headlineSize" type="range" min="54" max="62" value="58">
+        </div>
+
+        <div id="supportField">
+          <label for="support">Supporting text</label>
+          <textarea id="support" rows="3"></textarea>
+        </div>
+        <div id="supportSizeField">
+          <label for="supportSize"><span id="supportSizeLabel">Supporting size</span> <output id="supportSizeOut"></output></label>
+          <input id="supportSize" type="range" min="22" max="25" value="23">
+        </div>
+
+        <div id="ctaField">
+          <label for="cta">CTA line</label>
+          <input id="cta" autocomplete="off">
+        </div>
+
+        <div id="statisticField" hidden>
+          <div class="split">
+            <div>
+              <label for="number">Big number</label>
+              <input id="number" maxlength="8" autocomplete="off">
+            </div>
+            <div>
+              <label for="unit">Unit</label>
+              <input id="unit" maxlength="8" autocomplete="off">
+            </div>
+          </div>
+          <label for="statement">Statement</label>
+          <textarea id="statement" rows="3"></textarea>
+          <p class="hint">The headline size slider sets the statement size. One *phrase* can be red.</p>
+          <label for="context">Context</label>
+          <textarea id="context" rows="2"></textarea>
+          <label for="source">Source line</label>
+          <input id="source" autocomplete="off">
+          <label class="check" for="exampleData">
+            <input id="exampleData" type="checkbox">
+            Show the Example Data badge
+          </label>
+        </div>
+
+        <div id="stepsField" hidden>
+          <p class="hint" id="cardSizeHint">Card text uses the supporting size slider.</p>
+          <div class="step" id="step-1"></div>
+          <div class="step" id="step-2"></div>
+          <div class="step" id="step-3"></div>
+        </div>
+
+        <div id="backgroundField" hidden>
+          <label for="background">Background</label>
+          <select id="background">
+            <option value="navy">Navy</option>
+            <option value="paper">Paper</option>
+            <option value="white">White</option>
+          </select>
+        </div>
+
+        <button type="button" id="restoreSample" class="ghost">Restore sample copy</button>
+      </section>
+
+      <section id="photoField" hidden>
+        <h2>Photo</h2>
+        <label for="photoFile">Upload</label>
+        <input id="photoFile" type="file" accept="image/png,image/jpeg,image/webp">
+        <button type="button" id="removePhoto" class="ghost">Use the default photo</button>
+        <label for="photoZoom">Zoom <output id="photoZoomOut"></output></label>
+        <input id="photoZoom" type="range" min="100" max="240" value="100">
+        <label for="photoX">Horizontal position <output id="photoXOut"></output></label>
+        <input id="photoX" type="range" min="0" max="100" value="50">
+        <label for="photoY">Vertical position <output id="photoYOut"></output></label>
+        <input id="photoY" type="range" min="0" max="100" value="50">
+        <label for="fade">Fade strength <output id="fadeOut"></output></label>
+        <input id="fade" type="range" min="0" max="100" value="70">
+        <p id="photoNote" class="note" hidden></p>
+      </section>
+
+      <div id="warnings" role="status" aria-live="polite"></div>
+
+      <section class="actions">
+        <button type="button" id="download">Download PNG</button>
+        <button type="button" id="downloadAll" class="ghost">Export all 3 sizes</button>
+      </section>
+
+      <section>
+        <h2>Saved designs</h2>
+        <label for="designName">Name</label>
+        <input id="designName" maxlength="80" autocomplete="off" placeholder="Quarterly announcement">
+        <div class="row">
+          <button type="button" id="saveDesign" class="ghost">Save</button>
+          <button type="button" id="duplicateDesign" class="ghost">Duplicate</button>
+        </div>
+        <label for="savedDesigns">Library</label>
+        <select id="savedDesigns"></select>
+        <div class="row">
+          <button type="button" id="loadDesign" class="ghost">Load</button>
+          <button type="button" id="deleteDesign" class="ghost">Delete</button>
+        </div>
+        <div class="row">
+          <button type="button" id="exportJson" class="ghost">Export JSON</button>
+          <label class="file-button">
+            Import JSON
+            <input id="importJson" type="file" accept="application/json,.json">
+          </label>
+        </div>
+        <p id="libraryStatus" class="hint"></p>
+      </section>
+
+      <section>
+        <h2>Caption helper</h2>
+        <label for="caption">LinkedIn post caption</label>
+        <textarea id="caption" rows="5" maxlength="3000" placeholder="Write the post that goes with this image."></textarea>
+        <div class="row spread">
+          <span id="captionCount">0 / 3,000</span>
+          <button type="button" id="copyCaption" class="ghost">Copy</button>
+        </div>
+      </section>
+    </aside>
+
+    <main class="stage-wrap">
+      <div class="stage-bar">
+        <p id="specLine">1200 × 628</p>
+        <p id="status">Loading fonts…</p>
+      </div>
+      <div class="stage" id="stage">
+        <canvas id="preview" width="1200" height="628" aria-label="LinkedIn image preview"></canvas>
+      </div>
+    </main>
+  </div>
+  <script src="studio.js"></script>
+</body>
+</html>
