@@ -1,5 +1,5 @@
 /* SETTINGS
-   Brand tokens, canvas sizes, and sample copy.
+   Brand tokens, canvas sizes, sample copy, and logo-to-label spacing.
    A brand change is an edit to this block.
 */
 const SETTINGS = {
@@ -119,6 +119,17 @@ const SETTINGS = {
       educational: { landscape: { logo: 20, tag: 12 }, square: { logo: 24 }, portrait: { logo: 28 } },
     },
   },
+  // Distance from the logo bottom to the series label, in px at that size.
+  // def null keeps the designed layout for every format and size.
+  // A design stores one number per size. Export uses each size's own value.
+  // A size left null keeps that size's designed gap. One scaled value does
+  // not fit: designed gaps differ by format and size, and the story and tall
+  // announcement layouts are not a scale of the landscape gap.
+  logoLabelSpacing: {
+    def: null,
+    min: 8,
+    max: 960,
+  },
   formats: {
     announcement: { label: "Announcement", headline: true, support: true, cta: true, photo: true, statistic: false, steps: false, backgrounds: null },
     statistic: { label: "Statistic", headline: false, support: false, cta: false, photo: false, statistic: true, steps: false, backgrounds: ["paper", "white", "navy"], headlineSizeLabel: "Statement size", supportSizeLabel: "Context size" },
@@ -222,6 +233,7 @@ function blankState() {
     photoData: null,
     photoImg: null,
     caption: "",
+    logoLabelSpacing: { landscape: null, square: null, portrait: null },
   };
 }
 
@@ -237,6 +249,55 @@ function gapFor(view) {
   const base = SETTINGS.spacing[view.sizeKey];
   const over = (SETTINGS.spacing.formats[view.format] || {})[view.sizeKey] || {};
   return { ...base, ...over };
+}
+
+const SPACING_CLAMP_WARNING = "Logo to label spacing was reduced so the text stays above the signature.";
+
+function freshLabelSpacing() {
+  return { landscape: null, square: null, portrait: null };
+}
+
+function normalizeLabelSpacing(value) {
+  const out = freshLabelSpacing();
+  const limits = SETTINGS.logoLabelSpacing;
+  if (!value || typeof value !== "object" || Array.isArray(value)) return out;
+  ["landscape", "square", "portrait"].forEach((key) => {
+    if (value[key] == null || value[key] === "") return;
+    const n = Number(value[key]);
+    if (Number.isFinite(n)) out[key] = clamp(Math.round(n), limits.min, limits.max);
+  });
+  return out;
+}
+
+function measuredLabelLimit(boxes, logoBottom, gap, bodyBottom) {
+  const limits = SETTINGS.logoLabelSpacing;
+  let lowest = logoBottom + (Number.isFinite(gap) ? gap : 0);
+  boxes.forEach((box) => {
+    if (box.role === "signature" || box.id === "source" || box.id === "badge") return;
+    lowest = Math.max(lowest, box.y + box.h);
+  });
+  const slack = Math.max(0, bodyBottom - lowest);
+  const base = Number.isFinite(gap) ? gap : 0;
+  return clamp(Math.floor(base + slack), limits.min, limits.max);
+}
+
+function resolveLabelPlacement(view, limit) {
+  const limits = SETTINGS.logoLabelSpacing;
+  const capped = clamp(Math.floor(limit), limits.min, limits.max);
+  if (view.labelGap == null || !Number.isFinite(Number(view.labelGap))) return { gap: null, limit: capped };
+  const requested = clamp(Math.round(Number(view.labelGap)), limits.min, limits.max);
+  return { gap: clamp(requested, limits.min, capped), limit: capped };
+}
+
+function textOverflowPx(layout) {
+  if (!layout || !layout.boxes) return 0;
+  const limit = layout.height - layout.rail - layout.marginBottom;
+  let over = 0;
+  layout.boxes.forEach((box) => {
+    const edge = box.role === "signature" ? layout.signatureBottom : limit;
+    if (box.y + box.h > edge + 0.75) over = Math.max(over, box.y + box.h - edge);
+  });
+  return over;
 }
 
 function isDark(view) {
@@ -979,8 +1040,9 @@ function paintAnnouncement(ctx, view, theme, out, bodyBottom, photoBottom) {
   const maxW = columnWidth(view);
   const rules = SETTINGS.rules;
   const range = headlineRange(view.format, view.sizeKey);
-  if (S.key === "landscape") {
-    let y = S.marginTop + S.logo + gap.logo;
+  if (S.key === "landscape" || view.resolvedLabelGap != null) {
+    const gapPx = view.resolvedLabelGap == null ? gap.logo : view.resolvedLabelGap;
+    let y = S.marginTop + S.logo + gapPx;
     const tag = drawTag(ctx, view.series, x, y, S.tag, maxW, out);
     y = tag.bottom + gap.tag;
     const head = renderText(ctx, out, textSpec(view, "headline", view.headline, x, y, maxW, 3, bodyBottom - y - 70, range, theme, rules));
@@ -1060,7 +1122,8 @@ function paintStatistic(ctx, view, theme, out, bodyBottom) {
   const x = S.marginX;
   const right = S.w - S.marginX;
   const range = headlineRange(view.format, view.sizeKey);
-  let y = S.marginTop + S.logo + gap.logo;
+  const gapPx = view.resolvedLabelGap == null ? gap.logo : view.resolvedLabelGap;
+  let y = S.marginTop + S.logo + gapPx;
   const tag = drawTag(ctx, view.series, x, y, S.tag, right - x - 1, out);
   y = tag.bottom + gap.tag;
   const stacked = S.key !== "landscape";
@@ -1146,7 +1209,8 @@ function paintInsight(ctx, view, theme, out, bodyBottom) {
   const range = headlineRange(view.format, view.sizeKey);
   const textX = S.marginX + rules.insightRule + rules.insightGap;
   const maxW = S.w - S.marginX - textX - 1;
-  let y = S.marginTop + S.logo + gap.logo;
+  const gapPx = view.resolvedLabelGap == null ? gap.logo : view.resolvedLabelGap;
+  let y = S.marginTop + S.logo + gapPx;
   const tag = drawTag(ctx, view.series, textX, y, S.tag, maxW, out);
   y = tag.bottom + gap.tag;
   const head = renderText(ctx, out, textSpec(view, "headline", view.headline, textX, y, maxW, 2, (bodyBottom - y) * 0.55, range, theme, rules));
@@ -1156,7 +1220,26 @@ function paintInsight(ctx, view, theme, out, bodyBottom) {
   renderText(ctx, out, textSpec(view, "support", view.support, textX, y, maxW, 3, bodyBottom - y, S.support, theme, rules, false));
 }
 
+function paintStoryFromLabelGap(ctx, view, theme, out, bodyBottom) {
+  const S = view.size;
+  const gap = gapFor(view);
+  const rules = SETTINGS.rules;
+  const range = headlineRange(view.format, view.sizeKey);
+  const x = S.marginX;
+  const maxW = columnWidth(view);
+  let y = S.marginTop + S.logo + view.resolvedLabelGap;
+  const tag = drawTag(ctx, view.series, x, y, S.tag, maxW, out);
+  y = tag.bottom + gap.tag;
+  const head = renderText(ctx, out, textSpec(view, "headline", view.headline, x, y, maxW, 3, Math.max(range.min, bodyBottom - y), range, theme, rules));
+  y = head.bottom + (String(view.support || "").trim() ? gap.afterHead : 0);
+  renderText(ctx, out, textSpec(view, "support", view.support, x, y, maxW, 2, Math.max(12, bodyBottom - y), S.support, theme, rules, false));
+}
+
 function paintStory(ctx, view, theme, out, bodyBottom) {
+  if (view.resolvedLabelGap != null) {
+    paintStoryFromLabelGap(ctx, view, theme, out, bodyBottom);
+    return;
+  }
   const S = view.size;
   const gap = gapFor(view);
   const rules = SETTINGS.rules;
@@ -1190,7 +1273,8 @@ function paintEducational(ctx, view, theme, out, bodyBottom) {
   const range = headlineRange(view.format, view.sizeKey);
   const x = S.marginX;
   const maxW = S.w - S.marginX * 2 - 1;
-  let y = S.marginTop + S.logo + gap.logo;
+  const gapPx = view.resolvedLabelGap == null ? gap.logo : view.resolvedLabelGap;
+  let y = S.marginTop + S.logo + gapPx;
   const tag = drawTag(ctx, view.series, x, y, S.tag, maxW, out);
   y = tag.bottom + gap.tag;
   const reserve = S.key === "landscape" ? 176 : S.key === "square" ? 460 : 560;
@@ -1202,7 +1286,8 @@ function paintEducational(ctx, view, theme, out, bodyBottom) {
   if (!stacked) {
     const gutter = gap.cardGap;
     const cardW = (maxW - gutter * 2) / 3;
-    const cardH = Math.min(zone, 156);
+    const room = Math.max(0, bodyBottom - y);
+    const cardH = Math.min(room, 156);
     steps.forEach((step, i) => {
       const cx = x + i * (cardW + gutter);
       drawCard(ctx, view, theme, out, step, i + 1, cx, y, cardW, cardH);
@@ -1213,8 +1298,13 @@ function paintEducational(ctx, view, theme, out, bodyBottom) {
   const natural = 132;
   const minGap = gap.cardGap;
   const extra = Math.max(0, zone - (natural * 3 + minGap * 2));
-  const between = minGap + Math.min(28, extra / 2);
-  const cardH = Math.min(190, natural + Math.min(24, extra / 6));
+  let between = minGap + Math.min(28, extra / 2);
+  let cardH = Math.min(190, natural + Math.min(24, extra / 6));
+  const used = cardH * 3 + between * 2;
+  if (used > zone && zone > 0) {
+    between = Math.min(between, Math.max(8, (zone - 144) / 2));
+    cardH = Math.max(48, (zone - between * 2) / 3);
+  }
   steps.forEach((step, i) => {
     drawCard(ctx, view, theme, out, step, i + 1, x, y + i * (cardH + between), maxW, cardH);
   });
@@ -1235,6 +1325,7 @@ function drawCard(ctx, view, theme, out, step, index, x, y, w, h) {
   ctx.strokeStyle = b.line;
   ctx.lineWidth = 1;
   ctx.stroke();
+  out.boxes.push({ id: "card-" + index, role: "text", x, y, w, h });
   const padX = S.key === "landscape" ? 16 : 20;
   const padY = S.key === "landscape" ? 18 : 20;
   const circle = S.key === "landscape" ? 30 : 34;
@@ -1274,7 +1365,7 @@ function drawCard(ctx, view, theme, out, step, index, x, y, w, h) {
   });
 }
 
-function paint(canvas, view) {
+function paintFrame(canvas, view) {
   const S = view.size;
   const theme = themeFor(view);
   const out = { boxes: [], warnings: [], drawnHeadline: view.headlineSize, drawnSupport: view.supportSize };
@@ -1295,14 +1386,25 @@ function paint(canvas, view) {
   if (view.format === "insight") paintTriangle(ctx, view, theme);
   drawLogo(ctx, view);
   const footer = footerPlan(ctx, view, theme, out);
-  if (view.format === "announcement") paintAnnouncement(ctx, view, theme, out, footer.bodyBottom, photoBottom);
-  if (view.format === "statistic") paintStatistic(ctx, view, theme, out, footer.bodyBottom);
-  if (view.format === "insight") paintInsight(ctx, view, theme, out, footer.bodyBottom);
-  if (view.format === "story") paintStory(ctx, view, theme, out, footer.bodyBottom);
-  if (view.format === "educational") paintEducational(ctx, view, theme, out, footer.bodyBottom);
+  const spacingLimit = view.labelGap == null || !Number.isFinite(Number(view.labelGap))
+    ? SETTINGS.logoLabelSpacing.max
+    : designedSpacingLimit(view);
+  const placement = resolveLabelPlacement(view, spacingLimit);
+  const drawView = { ...view, resolvedLabelGap: placement.gap };
+  if (drawView.format === "announcement") paintAnnouncement(ctx, drawView, theme, out, footer.bodyBottom, photoBottom);
+  if (drawView.format === "statistic") paintStatistic(ctx, drawView, theme, out, footer.bodyBottom);
+  if (drawView.format === "insight") paintInsight(ctx, drawView, theme, out, footer.bodyBottom);
+  if (drawView.format === "story") paintStory(ctx, drawView, theme, out, footer.bodyBottom);
+  if (drawView.format === "educational") paintEducational(ctx, drawView, theme, out, footer.bodyBottom);
   footer.draw();
   drawRail(ctx, view);
   const range = headlineRange(view.format, view.sizeKey);
+  const tag = out.boxes.find((box) => box.id === "tag");
+  const logoBottom = S.marginTop + S.logo;
+  const logoLabelGap = tag ? tag.y - logoBottom : null;
+  const labelGapLimit = placement.gap == null
+    ? measuredLabelLimit(out.boxes, logoBottom, logoLabelGap, footer.bodyBottom)
+    : placement.limit;
   return {
     width: S.w,
     height: S.h,
@@ -1319,7 +1421,35 @@ function paint(canvas, view) {
     drawnSupport: out.drawnSupport,
     minSupport: S.support.min,
     signatureBottom: S.h - S.rail - (S.marginBottom - SETTINGS.rules.signatureInset),
+    logoBottom,
+    logoLabelGap,
+    labelGapLimit,
   };
+}
+
+function designedSpacingLimit(view) {
+  const canvas = document.createElement("canvas");
+  const layout = paintFrame(canvas, { ...view, labelGap: null });
+  return layout.labelGapLimit;
+}
+
+function paint(canvas, view) {
+  const requested = view.labelGap;
+  let layout = paintFrame(canvas, view);
+  if (requested == null || !Number.isFinite(Number(requested))) return layout;
+  let guard = 0;
+  while (textOverflowPx(layout) > 0.75 && guard < 8) {
+    guard += 1;
+    const gap = layout.logoLabelGap;
+    const next = Math.max(SETTINGS.logoLabelSpacing.min, Math.floor(gap - textOverflowPx(layout) - 1));
+    if (!Number.isFinite(gap) || next >= gap - 0.5) break;
+    layout = paintFrame(canvas, { ...view, labelGap: next });
+    layout.labelGapLimit = Math.min(layout.labelGapLimit, next);
+  }
+  if (Number.isFinite(layout.logoLabelGap) && requested - layout.logoLabelGap >= 2) {
+    if (!layout.warnings.includes(SPACING_CLAMP_WARNING)) layout.warnings.push(SPACING_CLAMP_WARNING);
+  }
+  return layout;
 }
 
 function photoForState() {
@@ -1357,7 +1487,21 @@ function buildView(sizeKey) {
     fade: state.fade,
     photo: photoForState(),
     desaturate: state.useDefaultPhoto && state.format === "announcement" ? SETTINGS.samples.announcement.desaturate : 0,
+    labelGap: state.logoLabelSpacing[key],
   };
+}
+
+function designedLabelGap(sizeKey) {
+  const key = sizeKey || state.size;
+  const fixed = state.format === "statistic"
+    || state.format === "insight"
+    || state.format === "educational"
+    || (state.format === "announcement" && key === "landscape");
+  const view = buildView(key);
+  if (fixed) return gapFor(view).logo;
+  view.labelGap = null;
+  const canvas = document.createElement("canvas");
+  return paintFrame(canvas, view).logoLabelGap;
 }
 
 function renderNow() {
@@ -1365,6 +1509,11 @@ function renderNow() {
     lastLayout = paint($("preview"), buildView(state.size));
   } catch (err) {
     lastLayout = { boxes: [], warnings: ["Render error: " + err.message], width: 0, height: 0 };
+  }
+  const storedGap = state.logoLabelSpacing && state.logoLabelSpacing[state.size];
+  if (storedGap != null && lastLayout && Number.isFinite(lastLayout.logoLabelGap)) {
+    const applied = clamp(Math.round(lastLayout.logoLabelGap), SETTINGS.logoLabelSpacing.min, SETTINGS.logoLabelSpacing.max);
+    if (Math.abs(storedGap - applied) >= 2) state.logoLabelSpacing[state.size] = applied;
   }
   fitPreview();
   showWarnings(lastLayout.warnings || []);
@@ -1413,6 +1562,25 @@ function updateOutputs() {
   $("photoXOut").textContent = Math.round(state.photoX);
   $("photoYOut").textContent = Math.round(state.photoY);
   $("fadeOut").textContent = Math.round(state.fade);
+  const range = $("logoLabelSpacing");
+  const num = $("logoLabelSpacingNum");
+  if (!range || !num || !state.logoLabelSpacing) return;
+  const limits = SETTINGS.logoLabelSpacing;
+  const measured = lastLayout && Number.isFinite(lastLayout.logoLabelGap) ? lastLayout.logoLabelGap : null;
+  const stored = state.logoLabelSpacing[state.size];
+  const shown = stored == null
+    ? (measured == null ? limits.min : Math.round(measured))
+    : (measured == null ? stored : Math.round(measured));
+  const limit = lastLayout && Number.isFinite(lastLayout.labelGapLimit) ? lastLayout.labelGapLimit : limits.max;
+  const sliderMax = Math.max(limits.min, limit, shown);
+  range.min = String(limits.min);
+  range.max = String(sliderMax);
+  num.min = String(limits.min);
+  num.max = String(sliderMax);
+  if (document.activeElement !== num) {
+    range.value = String(shown);
+    num.value = String(shown);
+  }
 }
 
 function updateCaptionCount() {
@@ -1452,6 +1620,7 @@ function loadSample(format, sizeKey) {
   if ($("photoFile")) $("photoFile").value = "";
   state.headlineSize = headlineRange(format, state.size).def;
   state.supportSize = SETTINGS.sizes[state.size].support.def;
+  state.logoLabelSpacing = freshLabelSpacing();
   applyDefaultCrop();
   syncUI();
   renderNow();
@@ -1545,6 +1714,20 @@ function readForm(event) {
   state.photoX = clamp(Number($("photoX").value), 0, 100);
   state.photoY = clamp(Number($("photoY").value), 0, 100);
   state.fade = clamp(Number($("fade").value), 0, 100);
+  if (target && (target.id === "logoLabelSpacing" || target.id === "logoLabelSpacingNum")) {
+    const raw = String(target.value).trim();
+    if (raw !== "") {
+      const n = Math.round(Number(raw));
+      const limits = SETTINGS.logoLabelSpacing;
+      if (Number.isFinite(n)) {
+        const designed = designedLabelGap(state.size);
+        const clamped = clamp(n, limits.min, limits.max);
+        state.logoLabelSpacing[state.size] = designed != null && Math.abs(clamped - designed) <= 1
+          ? null
+          : clamped;
+      }
+    }
+  }
   state.steps = [1, 2, 3].map((i) => ({
     title: $(`step${i}Title`).value,
     line: $(`step${i}Line`).value,
@@ -1594,6 +1777,11 @@ function snapshot() {
     useDefaultPhoto: state.useDefaultPhoto,
     photoData: state.useDefaultPhoto ? null : state.photoData,
     caption: state.caption,
+    logoLabelSpacing: {
+      landscape: state.logoLabelSpacing.landscape,
+      square: state.logoLabelSpacing.square,
+      portrait: state.logoLabelSpacing.portrait,
+    },
   };
 }
 
@@ -1683,6 +1871,7 @@ async function saveDesign(name, design) {
 async function applyDesign(design) {
   const next = blankState();
   Object.assign(next, design);
+  next.logoLabelSpacing = normalizeLabelSpacing(design && design.logoLabelSpacing);
   next.steps = (design.steps || next.steps).map((step) => ({ ...step }));
   next.photoImg = null;
   if (design.photoData && !design.useDefaultPhoto) {
@@ -1873,6 +2062,8 @@ function bindUI() {
     }
     event.target.value = "";
   });
+  $("logoLabelSpacingNum").addEventListener("blur", () => updateOutputs());
+  $("logoLabelSpacing").addEventListener("change", () => updateOutputs());
   $("copyCaption").addEventListener("click", async () => {
     const text = $("caption").value;
     try {
@@ -1941,10 +2132,14 @@ window.AOG = {
   },
   exportDesignsJSON: () => JSON.stringify(exportDesignsObject()),
   importDesignsJSON: importDesignsText,
-  async exportDataURL(sizeKey) {
+  async   exportDataURL(sizeKey) {
     const file = await exportPNG(sizeKey || state.size);
     const canvas = file.canvas;
     return canvas.toDataURL("image/png");
+  },
+  layoutFor(sizeKey) {
+    const canvas = document.createElement("canvas");
+    return paint(canvas, buildView(sizeKey || state.size));
   },
   pngName,
 };

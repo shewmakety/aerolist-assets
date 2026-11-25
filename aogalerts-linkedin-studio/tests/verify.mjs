@@ -1,5 +1,5 @@
 /* SETTINGS
-   Formats, sizes, and margin rules checked by the studio render.
+   Formats, sizes, margin rules, and the designed logo-to-label gaps.
 */
 const SETTINGS = {
   host: "127.0.0.1",
@@ -11,6 +11,14 @@ const SETTINGS = {
     portrait: { w: 1080, h: 1350 },
   },
   longHeadline: "Visibility across the network ".repeat(28).trim(),
+  spacing: { def: null, min: 8, max: 960 },
+  designedGaps: {
+    announcement: { landscape: 26, square: 434.4, portrait: 575.28 },
+    statistic: { landscape: 22, square: 28, portrait: 36 },
+    insight: { landscape: 48, square: 60, portrait: 72 },
+    story: { landscape: 138.6, square: 474.56, portrait: 734.2 },
+    educational: { landscape: 20, square: 24, portrait: 28 },
+  },
 };
 
 import { createServer } from "node:http";
@@ -116,6 +124,10 @@ for (const format of SETTINGS.formats) {
         url,
         rail: pixel(Math.round(canvas.width / 2), canvas.height - 2),
         tag: layout.boxes.find((box) => box.id === "tag"),
+        gap: layout.logoLabelGap,
+        limit: layout.labelGapLimit,
+        logoBottom: layout.logoBottom,
+        spacing: window.AOG.getState().logoLabelSpacing,
       };
     }, { format, size });
 
@@ -127,6 +139,10 @@ for (const format of SETTINGS.formats) {
     check(result.mismatches.length === 0, `${format} ${size} margins: ${result.mismatches.join("; ")}`);
     check(result.rail[0] > 210 && result.rail[1] < 50 && result.rail[2] < 55, `${format} ${size} rail ${result.rail.join(",")}`);
     check(result.tag, `${format} ${size} missing series tag`);
+    const designedGap = SETTINGS.designedGaps[format][size];
+    check(Math.abs(result.gap - designedGap) < 0.75, `${format} ${size} logo gap ${result.gap} designed ${designedGap}`);
+    check(result.spacing.landscape == null && result.spacing.square == null && result.spacing.portrait == null, `${format} ${size} spacing was not the designed default`);
+    check(result.tag.y >= result.logoBottom + SETTINGS.spacing.min - 0.75, `${format} ${size} label overlaps the logo`);
     if (result.warnings.length) notes.push(`${format} ${size}: ${result.warnings.join(" | ")}`);
     await writeFile(join(sampleDir, result.name), buf);
     saved.push(result.name);
@@ -182,6 +198,150 @@ check(!/source line is required/i.test(filled || ""), "source warning stayed aft
 const exported = await page.evaluate(() => window.AOG.exportDesignsJSON());
 const parsed = JSON.parse(exported);
 check(parsed.kind === "aogalerts-linkedin-designs" && parsed.designs.some((item) => item.name === "QA Storage Design"), "JSON export missed the saved design");
+
+const spacingLimits = await page.evaluate(() => window.AOG.SETTINGS.logoLabelSpacing);
+check(spacingLimits.def == null && spacingLimits.min === SETTINGS.spacing.min && spacingLimits.max === SETTINGS.spacing.max, "spacing min/max/default settings drifted");
+
+for (const format of SETTINGS.formats) {
+  for (const size of Object.keys(SETTINGS.sizes)) {
+    const moved = await page.evaluate(async ({ format, size, min }) => {
+      window.AOG.loadSample(format, size);
+      const before = window.AOG.getLayout();
+      const beforeTag = before.boxes.find((box) => box.id === "tag");
+      const beforeSig = before.boxes.find((box) => box.id === "signature");
+      const contentId = format === "statistic" ? "number" : "headline";
+      const beforeContent = before.boxes.find((box) => box.id === contentId);
+      const otherSize = size === "landscape" ? "square" : "landscape";
+      const otherBefore = window.AOG.layoutFor(otherSize).boxes.find((box) => box.id === "tag").y;
+      const room = Math.max(0, (before.labelGapLimit || 0) - before.logoLabelGap);
+      const target = room > 36
+        ? Math.round(before.logoLabelGap + Math.min(72, room - 4))
+        : Math.max(min, Math.round(before.logoLabelGap - 72));
+      const input = document.getElementById("logoLabelSpacingNum");
+      input.value = String(target);
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+      const after = window.AOG.getLayout();
+      const afterTag = after.boxes.find((box) => box.id === "tag");
+      const afterSig = after.boxes.find((box) => box.id === "signature");
+      const afterContent = after.boxes.find((box) => box.id === contentId);
+      const otherAfter = window.AOG.layoutFor(otherSize).boxes.find((box) => box.id === "tag").y;
+      const png = await window.AOG.exportDataURL(size);
+      return {
+        target,
+        beforeGap: before.logoLabelGap,
+        afterGap: after.logoLabelGap,
+        beforeTag: beforeTag.y,
+        afterTag: afterTag.y,
+        beforeContent: beforeContent && beforeContent.y,
+        afterContent: afterContent && afterContent.y,
+        sigSame: beforeSig.y === afterSig.y && beforeSig.x === afterSig.x,
+        otherSame: otherBefore === otherAfter,
+        stored: window.AOG.getState().logoLabelSpacing[size],
+        otherStored: window.AOG.getState().logoLabelSpacing[otherSize],
+        warnings: after.warnings,
+        bad: (function problems(layout) {
+          const bad = [];
+          for (const box of layout.boxes) {
+            const right = box.role === "signature"
+              ? layout.signatureBottom + 0.75
+              : layout.height - layout.rail - layout.marginBottom + 0.75;
+            if (box.y + box.h > right) bad.push(`${box.id} bottom ${(box.y + box.h).toFixed(1)}`);
+            if (box.id === "tag" && box.y < layout.logoBottom + min - 0.75) bad.push("tag overlaps logo");
+          }
+          return bad;
+        })(after),
+        png: png.startsWith("data:image/png"),
+        label: document.querySelector("label[for='logoLabelSpacing']").textContent,
+      };
+    }, { format, size, min: SETTINGS.spacing.min });
+
+    check(moved.label === "Logo To Label Spacing", `${format} ${size} control label`);
+    check(Math.abs(moved.afterGap - moved.beforeGap) > 12, `${format} ${size} spacing did not move the label (${moved.beforeGap} -> ${moved.afterGap}, target ${moved.target})`);
+    check(Math.abs((moved.afterContent - moved.beforeContent) - (moved.afterTag - moved.beforeTag)) < 1.25, `${format} ${size} text did not move with the label`);
+    check(moved.sigSame, `${format} ${size} signature moved`);
+    check(moved.otherSame && moved.otherStored == null, `${format} ${size} changed a different size`);
+    check(moved.bad.length === 0, `${format} ${size} spacing overflow: ${moved.bad.join("; ")}`);
+    check(moved.png, `${format} ${size} export failed`);
+    check(moved.stored == null || (moved.stored >= SETTINGS.spacing.min && moved.stored <= SETTINGS.spacing.max), `${format} ${size} stored ${moved.stored}`);
+  }
+}
+
+await page.evaluate(() => {
+  window.AOG.loadSample("insight", "square");
+  const input = document.getElementById("logoLabelSpacingNum");
+  input.value = "9999";
+  input.dispatchEvent(new Event("input", { bubbles: true }));
+});
+const clampedHigh = await page.evaluate(() => window.AOG.getState().logoLabelSpacing.square);
+check(clampedHigh <= SETTINGS.spacing.max, `high spacing stored ${clampedHigh}`);
+await page.evaluate((min) => {
+  const input = document.getElementById("logoLabelSpacingNum");
+  input.value = "-40";
+  input.dispatchEvent(new Event("input", { bubbles: true }));
+  input.value = String(min);
+  input.dispatchEvent(new Event("input", { bubbles: true }));
+}, SETTINGS.spacing.min);
+const atMin = await page.evaluate(() => {
+  const layout = window.AOG.getLayout();
+  const tag = layout.boxes.find((box) => box.id === "tag");
+  return { stored: window.AOG.getState().logoLabelSpacing.square, tag: tag.y, logo: layout.logoBottom, bad: layout.boxes.some((box) => box.role !== "signature" && box.y + box.h > layout.height - layout.rail - layout.marginBottom + 0.75) };
+});
+check(atMin.stored === SETTINGS.spacing.min, `min spacing stored ${atMin.stored}`);
+check(atMin.tag >= atMin.logo + SETTINGS.spacing.min - 0.75, "min spacing overlaps the logo");
+check(!atMin.bad, "min spacing crossed the bottom margin");
+
+await page.evaluate(() => {
+  const old = {
+    kind: "aogalerts-linkedin-designs",
+    version: 1,
+    designs: [{
+      id: "old-design",
+      name: "Old Design",
+      design: {
+        format: "insight",
+        size: "landscape",
+        seriesPreset: "the-aog-view",
+        series: "The AOG View",
+        headline: "Old headline stays at the designed gap",
+        support: "Old support line",
+        background: "white",
+        headlineSize: 58,
+        supportSize: 23,
+      },
+    }],
+  };
+  window.AOG.importDesignsJSON(JSON.stringify(old));
+});
+await page.selectOption("#savedDesigns", { label: "Old Design" });
+await page.click("#loadDesign");
+await page.waitForFunction(() => document.getElementById("headline").value === "Old headline stays at the designed gap");
+const oldLoaded = await page.evaluate(() => {
+  const state = window.AOG.getState();
+  const layout = window.AOG.getLayout();
+  return { spacing: state.logoLabelSpacing, gap: layout.logoLabelGap };
+});
+check(oldLoaded.spacing.landscape == null && oldLoaded.spacing.square == null && oldLoaded.spacing.portrait == null, "old JSON did not load the designed spacing");
+check(Math.abs(oldLoaded.gap - SETTINGS.designedGaps.insight.landscape) < 0.75, `old JSON gap ${oldLoaded.gap}`);
+
+await page.evaluate(() => {
+  window.AOG.loadSample("statistic", "portrait");
+  const input = document.getElementById("logoLabelSpacingNum");
+  input.value = "120";
+  input.dispatchEvent(new Event("input", { bubbles: true }));
+});
+await page.fill("#designName", "Spacing Save");
+await page.click("#saveDesign");
+await page.reload({ waitUntil: "networkidle" });
+await page.waitForFunction(() => window.AOG && window.AOG.ready);
+await page.selectOption("#savedDesigns", { label: "Spacing Save" });
+await page.click("#loadDesign");
+await page.waitForFunction(() => document.getElementById("logoLabelSpacingNum").value === "120");
+const savedSpacing = await page.evaluate(() => window.AOG.getState().logoLabelSpacing);
+check(savedSpacing.portrait === 120 && savedSpacing.landscape == null && savedSpacing.square == null, `saved spacing ${JSON.stringify(savedSpacing)}`);
+const savedGap = await page.evaluate(() => window.AOG.getLayout().logoLabelGap);
+check(Math.abs(savedGap - 120) < 1.25, `loaded portrait gap ${savedGap}`);
+const squareKept = await page.evaluate(() => window.AOG.layoutFor("square").logoLabelGap);
+check(Math.abs(squareKept - SETTINGS.designedGaps.statistic.square) < 0.75, `square export gap ${squareKept}`);
 
 await page.evaluate(() => {
   window.AOG.loadSample("announcement", "landscape");
