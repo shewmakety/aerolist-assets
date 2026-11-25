@@ -106,25 +106,6 @@ input[type="range"] {
   accent-color: #E31C23;
 }
 
-.spacing-pair {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 72px auto;
-  gap: 8px;
-  align-items: center;
-}
-
-.spacing-pair input[type="number"] {
-  width: 72px;
-  padding: 8px 6px;
-  text-align: right;
-}
-
-.spacing-pair span {
-  font-size: 12px;
-  font-weight: 800;
-  color: #091D3B;
-}
-
 .format-list, .size-list { display: grid; gap: 6px; }
 
 .size-list { grid-template-columns: repeat(3, 1fr); }
