@@ -1562,9 +1562,9 @@ function updateOutputs() {
   $("photoXOut").textContent = Math.round(state.photoX);
   $("photoYOut").textContent = Math.round(state.photoY);
   $("fadeOut").textContent = Math.round(state.fade);
-  const range = $("logoLabelSpacing");
-  const num = $("logoLabelSpacingNum");
-  if (!range || !num || !state.logoLabelSpacing) return;
+  const spacing = $("logoLabelSpacing");
+  const spacingOut = $("logoLabelSpacingOut");
+  if (!spacing || !spacingOut || !state.logoLabelSpacing) return;
   const limits = SETTINGS.logoLabelSpacing;
   const measured = lastLayout && Number.isFinite(lastLayout.logoLabelGap) ? lastLayout.logoLabelGap : null;
   const stored = state.logoLabelSpacing[state.size];
@@ -1573,14 +1573,10 @@ function updateOutputs() {
     : (measured == null ? stored : Math.round(measured));
   const limit = lastLayout && Number.isFinite(lastLayout.labelGapLimit) ? lastLayout.labelGapLimit : limits.max;
   const sliderMax = Math.max(limits.min, limit, shown);
-  range.min = String(limits.min);
-  range.max = String(sliderMax);
-  num.min = String(limits.min);
-  num.max = String(sliderMax);
-  if (document.activeElement !== num) {
-    range.value = String(shown);
-    num.value = String(shown);
-  }
+  spacing.min = String(limits.min);
+  spacing.max = String(sliderMax);
+  spacingOut.textContent = shown + " px";
+  spacing.value = String(shown);
 }
 
 function updateCaptionCount() {
@@ -1714,7 +1710,7 @@ function readForm(event) {
   state.photoX = clamp(Number($("photoX").value), 0, 100);
   state.photoY = clamp(Number($("photoY").value), 0, 100);
   state.fade = clamp(Number($("fade").value), 0, 100);
-  if (target && (target.id === "logoLabelSpacing" || target.id === "logoLabelSpacingNum")) {
+  if (target && target.id === "logoLabelSpacing") {
     const raw = String(target.value).trim();
     if (raw !== "") {
       const n = Math.round(Number(raw));
@@ -2062,8 +2058,6 @@ function bindUI() {
     }
     event.target.value = "";
   });
-  $("logoLabelSpacingNum").addEventListener("blur", () => updateOutputs());
-  $("logoLabelSpacing").addEventListener("change", () => updateOutputs());
   $("copyCaption").addEventListener("click", async () => {
     const text = $("caption").value;
     try {

@@ -217,7 +217,7 @@ for (const format of SETTINGS.formats) {
       const target = room > 36
         ? Math.round(before.logoLabelGap + Math.min(72, room - 4))
         : Math.max(min, Math.round(before.logoLabelGap - 72));
-      const input = document.getElementById("logoLabelSpacingNum");
+      const input = document.getElementById("logoLabelSpacing");
       input.value = String(target);
       input.dispatchEvent(new Event("input", { bubbles: true }));
       const after = window.AOG.getLayout();
@@ -251,11 +251,14 @@ for (const format of SETTINGS.formats) {
           return bad;
         })(after),
         png: png.startsWith("data:image/png"),
-        label: document.querySelector("label[for='logoLabelSpacing']").textContent,
+        label: document.querySelector("label[for='logoLabelSpacing']").childNodes[0].textContent.trim(),
+        readout: document.getElementById("logoLabelSpacingOut").textContent,
+        numberBox: Boolean(document.getElementById("logoLabelSpacingNum")),
       };
     }, { format, size, min: SETTINGS.spacing.min });
 
     check(moved.label === "Logo To Label Spacing", `${format} ${size} control label`);
+    check(/px$/.test(moved.readout) && !moved.numberBox, `${format} ${size} spacing readout`);
     check(Math.abs(moved.afterGap - moved.beforeGap) > 12, `${format} ${size} spacing did not move the label (${moved.beforeGap} -> ${moved.afterGap}, target ${moved.target})`);
     check(Math.abs((moved.afterContent - moved.beforeContent) - (moved.afterTag - moved.beforeTag)) < 1.25, `${format} ${size} text did not move with the label`);
     check(moved.sigSame, `${format} ${size} signature moved`);
@@ -268,14 +271,14 @@ for (const format of SETTINGS.formats) {
 
 await page.evaluate(() => {
   window.AOG.loadSample("insight", "square");
-  const input = document.getElementById("logoLabelSpacingNum");
+  const input = document.getElementById("logoLabelSpacing");
   input.value = "9999";
   input.dispatchEvent(new Event("input", { bubbles: true }));
 });
 const clampedHigh = await page.evaluate(() => window.AOG.getState().logoLabelSpacing.square);
 check(clampedHigh <= SETTINGS.spacing.max, `high spacing stored ${clampedHigh}`);
 await page.evaluate((min) => {
-  const input = document.getElementById("logoLabelSpacingNum");
+  const input = document.getElementById("logoLabelSpacing");
   input.value = "-40";
   input.dispatchEvent(new Event("input", { bubbles: true }));
   input.value = String(min);
@@ -325,7 +328,7 @@ check(Math.abs(oldLoaded.gap - SETTINGS.designedGaps.insight.landscape) < 0.75, 
 
 await page.evaluate(() => {
   window.AOG.loadSample("statistic", "portrait");
-  const input = document.getElementById("logoLabelSpacingNum");
+  const input = document.getElementById("logoLabelSpacing");
   input.value = "120";
   input.dispatchEvent(new Event("input", { bubbles: true }));
 });
@@ -335,7 +338,7 @@ await page.reload({ waitUntil: "networkidle" });
 await page.waitForFunction(() => window.AOG && window.AOG.ready);
 await page.selectOption("#savedDesigns", { label: "Spacing Save" });
 await page.click("#loadDesign");
-await page.waitForFunction(() => document.getElementById("logoLabelSpacingNum").value === "120");
+await page.waitForFunction(() => document.getElementById("logoLabelSpacingOut").textContent === "120 px");
 const savedSpacing = await page.evaluate(() => window.AOG.getState().logoLabelSpacing);
 check(savedSpacing.portrait === 120 && savedSpacing.landscape == null && savedSpacing.square == null, `saved spacing ${JSON.stringify(savedSpacing)}`);
 const savedGap = await page.evaluate(() => window.AOG.getLayout().logoLabelGap);
