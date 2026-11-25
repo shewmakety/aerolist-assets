@@ -17,11 +17,19 @@ Then visit http://localhost:8080/. A local server is required so the canvas can 
 1. Pick a format. Each one loads its sample copy and layout.
 2. Pick a size: 1200x628, 1080x1080, or 1080x1350.
 3. Edit the series label, headline, and the fields for that format. Wrap one phrase in `*asterisks*` to paint it red.
-4. Move the size sliders, background, photo crop, and fade only where the format allows them.
+4. Move the size sliders, Logo To Label Spacing, background, photo crop, and fade only where the format allows them.
 5. Download PNG, or use Export All 3 Sizes. Filenames look like `aogalerts_announcement_1200x628_20261124.png`.
 6. Save a named design in this browser, or export and import a JSON file. The caption box is for the LinkedIn post text. It has a 3,000 character counter and a copy button. Nothing is sent to a server.
 
 Default photos need a photographer credit if you post them. See CREDITS.md. The statistic sample ships with an Example Data badge. Turn that off when the figure is real, and keep a source line. An empty source shows a warning.
+
+## Logo To Label Spacing
+
+The Layout section sets the distance, in pixels, from the bottom of the fixed logo to the top of the red series label. The logo does not move. The series label and the text under it (headline, supporting text, figure, cards) move together.
+
+The control starts at the designed gap for the current format and size, so the sample layouts do not change until you move it. Each size stores its own pixel value. Download PNG uses the open size. Export all 3 sizes uses each size's own value, and a size you have not changed keeps its designed gap. One number scaled across sizes does not fit, because the designed gap is different on every format and size, and the aviation story and the tall announcement layouts are not a scale of the landscape gap.
+
+The gap stays clear of the logo and will not push text past the signature or the red rail. Long lines still shrink, and the shrink warning still appears. Saved designs and the JSON file store the three sizes. A JSON file from before this control loads with the designed gaps. Restore sample copy clears the spacing too.
 
 ## Change Brand Tokens
 

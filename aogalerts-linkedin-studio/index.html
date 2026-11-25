@@ -39,6 +39,17 @@
       </section>
 
       <section>
+        <h2>Layout</h2>
+        <label for="logoLabelSpacing">Logo To Label Spacing</label>
+        <div class="spacing-pair">
+          <input id="logoLabelSpacing" type="range" min="8" max="960" value="26" aria-describedby="logoLabelSpacingHint">
+          <input id="logoLabelSpacingNum" type="number" min="8" max="960" step="1" value="26" inputmode="numeric" aria-label="Logo To Label Spacing in pixels">
+          <span>px</span>
+        </div>
+        <p class="hint" id="logoLabelSpacingHint">Distance from the bottom of the logo to the top of the series label, in px at this size.</p>
+      </section>
+
+      <section>
         <h2>Copy</h2>
         <label for="seriesPreset">Series</label>
         <select id="seriesPreset"></select>
