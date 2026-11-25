@@ -1,5 +1,6 @@
 /* SETTINGS
-   Brand tokens, canvas sizes, sample copy, and logo-to-label spacing.
+   Brand tokens, canvas sizes, sample copy, logo-to-label spacing,
+   and the vertical gap between each stacked object.
    A brand change is an edit to this block.
 */
 const SETTINGS = {
@@ -42,6 +43,15 @@ const SETTINGS = {
     unitRatio: 0.34,
     badgeText: "EXAMPLE DATA",
     badgeTracking: 0.08,
+    // Statistic and educational gaps that are not the shared spacing numbers.
+    // Landscape statement-to-context is 8. Stacked statement-to-context is 12.
+    // Stacked figure-to-statement adds 8 below afterHead.
+    // A step line sits 6 below its title, and at least 8 below the number circle.
+    statContextRow: 8,
+    statContextStack: 12,
+    statFigureExtra: 8,
+    stepLineGap: 6,
+    stepCircleClearance: 8,
   },
   storage: {
     key: "aogalerts-linkedin-studio",
@@ -130,6 +140,29 @@ const SETTINGS = {
     min: 8,
     max: 960,
   },
+  // Vertical space between stacked objects, in px at that size.
+  // def null keeps the designed gap. Each size stores its own number.
+  // A size left null keeps that size's designed gap.
+  // Old JSON with no objectGaps loads null and keeps the designed layout.
+  objectGaps: {
+    def: null,
+    min: 0,
+    max: 960,
+  },
+  // One control per vertical gap. sizes limits a control to those canvases.
+  // above/below are the box ids the gap sits between.
+  gapCatalog: [
+    { key: "labelToHeadline", label: "Label To Headline", formats: ["announcement", "insight", "story", "educational"], above: "tag", below: "headline" },
+    { key: "headlineToSupport", label: "Headline To Supporting", formats: ["announcement", "insight", "story"], above: "headline", below: "support" },
+    { key: "supportToCta", label: "Supporting To CTA Line", formats: ["announcement"], above: "support", below: "cta" },
+    { key: "labelToFigure", label: "Label To Figure", formats: ["statistic"], above: "tag", below: "number" },
+    { key: "figureToStatement", label: "Figure To Statement", formats: ["statistic"], sizes: ["square", "portrait"], above: "number", below: "statement" },
+    { key: "statementToContext", label: "Statement To Context", formats: ["statistic"], above: "statement", below: "context" },
+    { key: "contextToSource", label: "Context To Source", formats: ["statistic"], above: "context", below: "source" },
+    { key: "headlineToSteps", label: "Headline To Steps", formats: ["educational"], above: "headline", below: "card-1" },
+    { key: "stepSpacing", label: "Step Spacing", formats: ["educational"], sizes: ["square", "portrait"], above: "card-1", below: "card-2" },
+    { key: "stepLineSpacing", label: "Step Line Spacing", formats: ["educational"], above: "step-title-1", below: "step-line-1" },
+  ],
   formats: {
     announcement: { label: "Announcement", headline: true, support: true, cta: true, photo: true, statistic: false, steps: false, backgrounds: null },
     statistic: { label: "Statistic", headline: false, support: false, cta: false, photo: false, statistic: true, steps: false, backgrounds: ["paper", "white", "navy"], headlineSizeLabel: "Statement size", supportSizeLabel: "Context size" },
@@ -200,6 +233,7 @@ const $ = (id) => document.getElementById(id);
 const assets = {};
 let scratch = null;
 let lastLayout = null;
+const OBJECT_GAP_KEYS = SETTINGS.gapCatalog.map((item) => item.key);
 let state = blankState();
 
 function blankState() {
@@ -234,6 +268,7 @@ function blankState() {
     photoImg: null,
     caption: "",
     logoLabelSpacing: { landscape: null, square: null, portrait: null },
+    objectGaps: freshObjectGaps(),
   };
 }
 
@@ -249,6 +284,195 @@ function gapFor(view) {
   const base = SETTINGS.spacing[view.sizeKey];
   const over = (SETTINGS.spacing.formats[view.format] || {})[view.sizeKey] || {};
   return { ...base, ...over };
+}
+
+const GAP_CLAMP_WARNING = "Spacing was reduced so the text stays inside the layout.";
+
+function freshSizeMap() {
+  return { landscape: null, square: null, portrait: null };
+}
+
+function freshObjectGaps() {
+  const out = {};
+  OBJECT_GAP_KEYS.forEach((key) => { out[key] = freshSizeMap(); });
+  return out;
+}
+
+function normalizeSizeMap(value, limits) {
+  const out = freshSizeMap();
+  if (!value || typeof value !== "object" || Array.isArray(value)) return out;
+  ["landscape", "square", "portrait"].forEach((key) => {
+    if (value[key] == null || value[key] === "") return;
+    const n = Number(value[key]);
+    if (Number.isFinite(n)) out[key] = clamp(Math.round(n), limits.min, limits.max);
+  });
+  return out;
+}
+
+function normalizeObjectGaps(value) {
+  const out = freshObjectGaps();
+  if (!value || typeof value !== "object" || Array.isArray(value)) return out;
+  OBJECT_GAP_KEYS.forEach((key) => {
+    out[key] = normalizeSizeMap(value[key], SETTINGS.objectGaps);
+  });
+  return out;
+}
+
+function objectGapsForSize(sizeKey) {
+  const out = {};
+  OBJECT_GAP_KEYS.forEach((key) => {
+    const slot = state.objectGaps && state.objectGaps[key];
+    out[key] = slot && slot[sizeKey] != null ? slot[sizeKey] : null;
+  });
+  return out;
+}
+
+function gapIsSet(view, key) {
+  if (!view || !view.objectGaps) return false;
+  const raw = view.objectGaps[key];
+  return raw != null && raw !== "" && Number.isFinite(Number(raw));
+}
+
+function chosenGap(view, key, designed) {
+  if (!gapIsSet(view, key)) return designed;
+  return clamp(Math.round(Number(view.objectGaps[key])), SETTINGS.objectGaps.min, SETTINGS.objectGaps.max);
+}
+
+function bounds(boxes, id) {
+  let y = Infinity;
+  let bottom = -Infinity;
+  let found = false;
+  (boxes || []).forEach((box) => {
+    if (box.id !== id) return;
+    found = true;
+    y = Math.min(y, box.y);
+    bottom = Math.max(bottom, box.y + box.h);
+  });
+  if (!found) return null;
+  return { y, bottom, h: bottom - y };
+}
+
+function unionBounds(a, b) {
+  if (!a) return b;
+  if (!b) return a;
+  const y = Math.min(a.y, b.y);
+  const bottom = Math.max(a.bottom, b.bottom);
+  return { y, bottom, h: bottom - y };
+}
+
+function pairGap(above, below) {
+  if (!above || !below) return null;
+  return below.y - above.bottom;
+}
+
+function blockSize(boxes, id) {
+  const line = (boxes || []).find((box) => box.id === id && Number.isFinite(box.size));
+  return line ? line.size : null;
+}
+
+function contentBottom(boxes) {
+  let bottom = 0;
+  (boxes || []).forEach((box) => {
+    if (box.role === "signature" || box.id === "source" || box.id === "badge") return;
+    bottom = Math.max(bottom, box.y + box.h);
+  });
+  return bottom;
+}
+
+function measureObjectGaps(boxes) {
+  const tag = bounds(boxes, "tag");
+  const headline = bounds(boxes, "headline");
+  const support = bounds(boxes, "support");
+  const cta = bounds(boxes, "cta");
+  const figure = unionBounds(bounds(boxes, "number"), bounds(boxes, "unit"));
+  const statement = bounds(boxes, "statement");
+  const context = bounds(boxes, "context");
+  const source = bounds(boxes, "source");
+  const card1 = bounds(boxes, "card-1");
+  const card2 = bounds(boxes, "card-2");
+  const title = bounds(boxes, "step-title-1");
+  const line = bounds(boxes, "step-line-1");
+  return {
+    labelToHeadline: pairGap(tag, headline),
+    headlineToSupport: pairGap(headline, support),
+    supportToCta: pairGap(support, cta),
+    labelToFigure: pairGap(tag, figure),
+    figureToStatement: pairGap(figure, statement),
+    statementToContext: pairGap(statement, context),
+    contextToSource: pairGap(context, source),
+    headlineToSteps: pairGap(headline, card1),
+    stepSpacing: card1 && card2 && card2.y >= card1.bottom - 0.5 ? pairGap(card1, card2) : null,
+    stepLineSpacing: pairGap(title, line),
+  };
+}
+
+function measureGapLimits(layout, measured) {
+  const min = SETTINGS.objectGaps.min;
+  const max = SETTINGS.objectGaps.max;
+  const edge = layout.height - layout.rail - layout.marginBottom;
+  const slack = Math.max(0, edge - contentBottom(layout.boxes));
+  const limits = {};
+  Object.keys(measured).forEach((key) => {
+    if (measured[key] == null || !Number.isFinite(measured[key])) return;
+    limits[key] = clamp(Math.floor(measured[key] + slack), min, max);
+  });
+  const source = bounds(layout.boxes, "source");
+  if (source && measured.contextToSource != null) {
+    const room = Math.max(0, edge - source.bottom);
+    limits.contextToSource = clamp(Math.floor(measured.contextToSource + room), min, max);
+  }
+  const card = bounds(layout.boxes, "card-1");
+  const line = bounds(layout.boxes, "step-line-1");
+  if (card && line && measured.stepLineSpacing != null) {
+    const room = Math.max(0, card.y + card.h - 14 - line.bottom);
+    limits.stepLineSpacing = clamp(Math.floor(measured.stepLineSpacing + room), min, max);
+  }
+  return limits;
+}
+
+function lowestSetGap(view, layout, skip) {
+  let best = null;
+  let bestY = -Infinity;
+  SETTINGS.gapCatalog.forEach((item) => {
+    if (skip && skip.has(item.key)) return;
+    if (!gapIsSet(view, item.key)) return;
+    if (!item.formats.includes(view.format)) return;
+    if (item.sizes && !item.sizes.includes(view.sizeKey)) return;
+    const below = bounds(layout.boxes, item.below);
+    const y = below ? below.y : -1;
+    if (y >= bestY) {
+      bestY = y;
+      best = item.key;
+    }
+  });
+  return best;
+}
+
+let measuringDesign = false;
+
+function designedLayout(view) {
+  if (measuringDesign) throw new Error("Designed layout was measured while a measurement was already running.");
+  measuringDesign = true;
+  try {
+    const clean = {};
+    OBJECT_GAP_KEYS.forEach((key) => { clean[key] = null; });
+    const canvas = document.createElement("canvas");
+    return paintFrame(canvas, { ...view, objectGaps: clean });
+  } finally {
+    measuringDesign = false;
+  }
+}
+
+function textAt(view, id, text, x, y, maxW, maxLines, maxHeight, range, theme, rules, display, lockBoxes) {
+  const spec = textSpec(view, id, text, x, y, maxW, maxLines, maxHeight, range, theme, rules, display);
+  if (!lockBoxes) return spec;
+  const size = blockSize(lockBoxes, id);
+  const block = bounds(lockBoxes, id);
+  if (!size || !block) return spec;
+  spec.pref = size;
+  spec.min = Math.min(range.min, size);
+  spec.maxHeight = Math.max(block.h + 2, 12);
+  return spec;
 }
 
 const SPACING_CLAMP_WARNING = "Logo to label spacing was reduced so the text stays above the signature.";
@@ -969,34 +1193,60 @@ function footerPlan(ctx, view, theme, out) {
     const blockH = beside ? Math.max(sourceBlock, badge ? badge.h : 0) : sourceBlock + badgeBlock;
     const top = safeBottom - blockH;
     bodyBottom = Math.min(bodyBottom, top - 16);
-    jobs.push(() => {
-      if (source) {
-        renderText(ctx, out, {
-          text: sourceText,
-          x: S.marginX,
-          y: top,
-          maxWidth: beside ? maxRow - badge.w - 12 : maxRow,
-          maxLines: beside ? 1 : 2,
-          pref: source.size,
-          min: source.size,
-          weight: 500,
-          trackingEm: 0,
-          lineHeight: 1.3,
-          color: theme.support,
-          highlight: theme.support,
-          id: "source",
-          label: "Source line",
-        });
-      }
-      if (badge) {
-        const bx = beside ? S.marginX + source.lines[0].width + 12 : S.marginX;
-        const by = beside ? top + (source.height - badge.h) / 2 : top + (source ? source.height + 8 : 0);
-        drawBadge(ctx, badge, bx, by, out);
-      }
-    });
+    const sourcePlan = { source, badge, beside, maxRow, sourceText, blockH, top };
+    if (!gapIsSet(view, "contextToSource")) {
+      jobs.push(() => paintStatisticSource(ctx, view, theme, out, sourcePlan, top));
+    }
+    jobs.push(() => drawSignature(ctx, sig, theme, out));
+    return { bodyBottom, sourcePlan, draw() { jobs.forEach((job) => job()); } };
   }
   jobs.push(() => drawSignature(ctx, sig, theme, out));
-  return { bodyBottom, draw() { jobs.forEach((job) => job()); } };
+  return { bodyBottom, sourcePlan: null, draw() { jobs.forEach((job) => job()); } };
+}
+
+function paintStatisticSource(ctx, view, theme, out, plan, top) {
+  const S = view.size;
+  const source = plan.source;
+  const badge = plan.badge;
+  const beside = plan.beside;
+  const maxRow = plan.maxRow;
+  const sourceText = plan.sourceText;
+  if (source && sourceText) {
+    renderText(ctx, out, {
+      text: sourceText,
+      x: S.marginX,
+      y: top,
+      maxWidth: beside ? maxRow - badge.w - 12 : maxRow,
+      maxLines: beside ? 1 : 2,
+      pref: source.size,
+      min: source.size,
+      weight: 500,
+      trackingEm: 0,
+      lineHeight: 1.3,
+      color: theme.support,
+      highlight: theme.support,
+      id: "source",
+      label: "Source line",
+    });
+  }
+  if (badge) {
+    const bx = beside ? S.marginX + source.lines[0].width + 12 : S.marginX;
+    const by = beside ? top + (source.height - badge.h) / 2 : top + (source ? source.height + 8 : 0);
+    drawBadge(ctx, badge, bx, by, out);
+  }
+}
+
+function placeContextSource(ctx, view, theme, out, plan) {
+  const S = view.size;
+  const context = bounds(out.boxes, "context");
+  const above = contentBottom(out.boxes);
+  const designed = context ? plan.top - context.bottom : 0;
+  const requested = chosenGap(view, "contextToSource", designed);
+  let top = (context ? context.bottom : above) + requested;
+  if (top < above) top = above;
+  const maxTop = (S.h - S.rail - S.marginBottom) - plan.blockH;
+  if (top > maxTop) top = maxTop;
+  paintStatisticSource(ctx, view, theme, out, plan, top);
 }
 
 function badgeMetrics(ctx, size) {
@@ -1033,6 +1283,29 @@ function columnWidth(view) {
   return S.w - S.marginX * 2 - 1;
 }
 
+function paintAnnouncementAnchored(ctx, view, theme, out, bodyBottom) {
+  const designed = designedLayout(view);
+  const S = view.size;
+  const gap = gapFor(view);
+  const x = S.marginX;
+  const maxW = columnWidth(view);
+  const rules = SETTINGS.rules;
+  const range = headlineRange(view.format, view.sizeKey);
+  const tagB = bounds(designed.boxes, "tag");
+  let y = tagB ? tagB.y : S.marginTop + S.logo + gap.logo;
+  const tag = drawTag(ctx, view.series, x, y, S.tag, maxW, out);
+  y = tag.bottom + chosenGap(view, "labelToHeadline", gap.tag);
+  const lockHead = !gapIsSet(view, "labelToHeadline");
+  const head = renderText(ctx, out, textAt(view, "headline", view.headline, x, y, maxW, 3, bodyBottom - y - 70, range, theme, rules, true, lockHead ? designed.boxes : null));
+  const afterHead = view.support.trim() ? chosenGap(view, "headlineToSupport", gap.afterHead) : 0;
+  y = head.bottom + afterHead;
+  const lockSupport = lockHead && !gapIsSet(view, "headlineToSupport");
+  const support = renderText(ctx, out, textAt(view, "support", view.support, x, y, maxW, 2, bodyBottom - y - 36, S.support, theme, rules, false, lockSupport ? designed.boxes : null));
+  if (view.cta.trim()) {
+    drawCta(ctx, view, theme, out, x, support.bottom + chosenGap(view, "supportToCta", gap.afterSupport), maxW, bodyBottom);
+  }
+}
+
 function paintAnnouncement(ctx, view, theme, out, bodyBottom, photoBottom) {
   const S = view.size;
   const gap = gapFor(view);
@@ -1040,15 +1313,25 @@ function paintAnnouncement(ctx, view, theme, out, bodyBottom, photoBottom) {
   const maxW = columnWidth(view);
   const rules = SETTINGS.rules;
   const range = headlineRange(view.format, view.sizeKey);
+  const anchored = S.key !== "landscape"
+    && view.resolvedLabelGap == null
+    && (gapIsSet(view, "labelToHeadline") || gapIsSet(view, "headlineToSupport") || gapIsSet(view, "supportToCta"));
+  if (anchored) {
+    paintAnnouncementAnchored(ctx, view, theme, out, bodyBottom);
+    return;
+  }
   if (S.key === "landscape" || view.resolvedLabelGap != null) {
     const gapPx = view.resolvedLabelGap == null ? gap.logo : view.resolvedLabelGap;
+    const tagGap = gapIsSet(view, "labelToHeadline") ? chosenGap(view, "labelToHeadline", gap.tag) : gap.tag;
+    const headGap = gapIsSet(view, "headlineToSupport") ? chosenGap(view, "headlineToSupport", gap.afterHead) : gap.afterHead;
+    const ctaGap = gapIsSet(view, "supportToCta") ? chosenGap(view, "supportToCta", gap.afterSupport) : gap.afterSupport;
     let y = S.marginTop + S.logo + gapPx;
     const tag = drawTag(ctx, view.series, x, y, S.tag, maxW, out);
-    y = tag.bottom + gap.tag;
+    y = tag.bottom + tagGap;
     const head = renderText(ctx, out, textSpec(view, "headline", view.headline, x, y, maxW, 3, bodyBottom - y - 70, range, theme, rules));
-    y = head.bottom + gap.afterHead;
+    y = head.bottom + headGap;
     const support = renderText(ctx, out, textSpec(view, "support", view.support, x, y, maxW, 2, bodyBottom - y - 36, S.support, theme, rules, false));
-    y = support.bottom + gap.afterSupport;
+    y = support.bottom + ctaGap;
     drawCta(ctx, view, theme, out, x, y, maxW, bodyBottom);
     return;
   }
@@ -1123,9 +1406,10 @@ function paintStatistic(ctx, view, theme, out, bodyBottom) {
   const right = S.w - S.marginX;
   const range = headlineRange(view.format, view.sizeKey);
   const gapPx = view.resolvedLabelGap == null ? gap.logo : view.resolvedLabelGap;
+  const tagGap = gapIsSet(view, "labelToFigure") ? chosenGap(view, "labelToFigure", gap.tag) : gap.tag;
   let y = S.marginTop + S.logo + gapPx;
   const tag = drawTag(ctx, view.series, x, y, S.tag, right - x - 1, out);
-  y = tag.bottom + gap.tag;
+  y = tag.bottom + tagGap;
   const stacked = S.key !== "landscape";
   let numSize = S.numberSize;
   const number = String(view.number || "").trim();
@@ -1170,14 +1454,20 @@ function paintStatistic(ctx, view, theme, out, bodyBottom) {
     });
   }
   if (stacked) {
-    let sy = numTop + ascent + descent + gap.afterHead + 8;
+    const figureGap = gapIsSet(view, "figureToStatement")
+      ? chosenGap(view, "figureToStatement", gap.afterHead + SETTINGS.rules.statFigureExtra)
+      : gap.afterHead + SETTINGS.rules.statFigureExtra;
+    const contextGap = gapIsSet(view, "statementToContext")
+      ? chosenGap(view, "statementToContext", SETTINGS.rules.statContextStack)
+      : SETTINGS.rules.statContextStack;
+    let sy = numTop + ascent + descent + figureGap;
     const statement = renderText(ctx, out, {
       text: view.statement, x, y: sy, maxWidth: right - x - 1, maxLines: 4,
       maxHeight: bodyBottom - sy - 80, pref: view.headlineSize, min: range.min, weight: 800,
       trackingEm: rules.headlineTracking, lineHeight: rules.headlineLineHeight,
       color: theme.headline, highlight: SETTINGS.brand.red, id: "statement", label: "Statement", track: "headline",
     });
-    sy = statement.bottom + 12;
+    sy = statement.bottom + contextGap;
     renderText(ctx, out, {
       text: view.context, x, y: sy, maxWidth: right - x - 1, maxLines: 3,
       maxHeight: bodyBottom - sy, pref: view.supportSize, min: S.support.min, weight: 500,
@@ -1193,9 +1483,12 @@ function paintStatistic(ctx, view, theme, out, bodyBottom) {
       trackingEm: rules.headlineTracking, lineHeight: rules.headlineLineHeight,
       color: theme.headline, highlight: SETTINGS.brand.red, id: "statement", label: "Statement", track: "headline",
     });
+    const contextGap = gapIsSet(view, "statementToContext")
+      ? chosenGap(view, "statementToContext", SETTINGS.rules.statContextRow)
+      : SETTINGS.rules.statContextRow;
     renderText(ctx, out, {
-      text: view.context, x: sx, y: statement.bottom + 8, maxWidth: sw, maxLines: 2,
-      maxHeight: Math.max(20, bodyBottom - statement.bottom - 8), pref: view.supportSize, min: S.support.min, weight: 500,
+      text: view.context, x: sx, y: statement.bottom + contextGap, maxWidth: sw, maxLines: 2,
+      maxHeight: Math.max(20, bodyBottom - statement.bottom - contextGap), pref: view.supportSize, min: S.support.min, weight: 500,
       trackingEm: 0, lineHeight: rules.supportLineHeight, color: theme.support, highlight: theme.support,
       id: "context", label: "Context", track: "support",
     });
@@ -1210,13 +1503,15 @@ function paintInsight(ctx, view, theme, out, bodyBottom) {
   const textX = S.marginX + rules.insightRule + rules.insightGap;
   const maxW = S.w - S.marginX - textX - 1;
   const gapPx = view.resolvedLabelGap == null ? gap.logo : view.resolvedLabelGap;
+  const tagGap = gapIsSet(view, "labelToHeadline") ? chosenGap(view, "labelToHeadline", gap.tag) : gap.tag;
+  const headGap = gapIsSet(view, "headlineToSupport") ? chosenGap(view, "headlineToSupport", gap.afterHead) : gap.afterHead;
   let y = S.marginTop + S.logo + gapPx;
   const tag = drawTag(ctx, view.series, textX, y, S.tag, maxW, out);
-  y = tag.bottom + gap.tag;
+  y = tag.bottom + tagGap;
   const head = renderText(ctx, out, textSpec(view, "headline", view.headline, textX, y, maxW, 2, (bodyBottom - y) * 0.55, range, theme, rules));
   ctx.fillStyle = SETTINGS.brand.red;
   ctx.fillRect(S.marginX, y, rules.insightRule, Math.max(head.layout.height, range.min));
-  y = head.bottom + gap.afterHead;
+  y = head.bottom + headGap;
   renderText(ctx, out, textSpec(view, "support", view.support, textX, y, maxW, 3, bodyBottom - y, S.support, theme, rules, false));
 }
 
@@ -1227,17 +1522,42 @@ function paintStoryFromLabelGap(ctx, view, theme, out, bodyBottom) {
   const range = headlineRange(view.format, view.sizeKey);
   const x = S.marginX;
   const maxW = columnWidth(view);
+  const tagGap = gapIsSet(view, "labelToHeadline") ? chosenGap(view, "labelToHeadline", gap.tag) : gap.tag;
+  const headGap = gapIsSet(view, "headlineToSupport") ? chosenGap(view, "headlineToSupport", gap.afterHead) : gap.afterHead;
   let y = S.marginTop + S.logo + view.resolvedLabelGap;
   const tag = drawTag(ctx, view.series, x, y, S.tag, maxW, out);
-  y = tag.bottom + gap.tag;
+  y = tag.bottom + tagGap;
   const head = renderText(ctx, out, textSpec(view, "headline", view.headline, x, y, maxW, 3, Math.max(range.min, bodyBottom - y), range, theme, rules));
-  y = head.bottom + (String(view.support || "").trim() ? gap.afterHead : 0);
+  y = head.bottom + (String(view.support || "").trim() ? headGap : 0);
   renderText(ctx, out, textSpec(view, "support", view.support, x, y, maxW, 2, Math.max(12, bodyBottom - y), S.support, theme, rules, false));
+}
+
+function paintStoryAnchored(ctx, view, theme, out, bodyBottom) {
+  const designed = designedLayout(view);
+  const S = view.size;
+  const gap = gapFor(view);
+  const rules = SETTINGS.rules;
+  const range = headlineRange(view.format, view.sizeKey);
+  const x = S.marginX;
+  const maxW = columnWidth(view);
+  const tagB = bounds(designed.boxes, "tag");
+  let y = tagB ? tagB.y : S.marginTop + S.logo + 28;
+  const tag = drawTag(ctx, view.series, x, y, S.tag, maxW, out);
+  y = tag.bottom + chosenGap(view, "labelToHeadline", gap.tag);
+  const lockHead = !gapIsSet(view, "labelToHeadline");
+  const head = renderText(ctx, out, textAt(view, "headline", view.headline, x, y, maxW, 3, Math.max(range.min, bodyBottom - y), range, theme, rules, true, lockHead ? designed.boxes : null));
+  const headGap = chosenGap(view, "headlineToSupport", gap.afterHead);
+  const lockSupport = lockHead && !gapIsSet(view, "headlineToSupport");
+  renderText(ctx, out, textAt(view, "support", view.support, x, head.bottom + headGap, maxW, 2, Math.max(12, bodyBottom - head.bottom - headGap), S.support, theme, rules, false, lockSupport ? designed.boxes : null));
 }
 
 function paintStory(ctx, view, theme, out, bodyBottom) {
   if (view.resolvedLabelGap != null) {
     paintStoryFromLabelGap(ctx, view, theme, out, bodyBottom);
+    return;
+  }
+  if (gapIsSet(view, "labelToHeadline") || gapIsSet(view, "headlineToSupport")) {
+    paintStoryAnchored(ctx, view, theme, out, bodyBottom);
     return;
   }
   const S = view.size;
@@ -1266,6 +1586,36 @@ function paintStory(ctx, view, theme, out, bodyBottom) {
   renderText(ctx, out, { ...textSpec(view, "support", view.support, x, head.bottom + gap.afterHead, maxW, 2, supFit.height + 2, S.support, theme, rules, false), pref: supFit.size });
 }
 
+function paintEducationalCards(ctx, view, theme, out, head, x, maxW, gap) {
+  const S = view.size;
+  const designed = designedLayout(view);
+  const dHead = bounds(designed.boxes, "headline");
+  const dCard = bounds(designed.boxes, "card-1");
+  const dCard2 = bounds(designed.boxes, "card-2");
+  const designedHeadGap = dHead && dCard ? dCard.y - dHead.bottom : gap.afterHead;
+  const headGap = chosenGap(view, "headlineToSteps", designedHeadGap);
+  const yCards = head.bottom + headGap;
+  const steps = [0, 1, 2].map((i) => view.steps[i] || { title: "", line: "", icon: "clipboard" });
+  const stacked = S.key !== "landscape";
+  if (!stacked) {
+    const gutter = gap.cardGap;
+    const cardW = (maxW - gutter * 2) / 3;
+    const cardH = dCard ? dCard.h : 156;
+    steps.forEach((step, i) => {
+      const cx = x + i * (cardW + gutter);
+      drawCard(ctx, view, theme, out, step, i + 1, cx, yCards, cardW, cardH);
+      if (i < 2) drawChevron(ctx, cx + cardW + gutter / 2, yCards + cardH / 2, 18);
+    });
+    return;
+  }
+  const designedBetween = dCard && dCard2 ? dCard2.y - dCard.bottom : gap.cardGap;
+  const between = gapIsSet(view, "stepSpacing") ? chosenGap(view, "stepSpacing", designedBetween) : designedBetween;
+  const cardH = dCard ? dCard.h : 132;
+  steps.forEach((step, i) => {
+    drawCard(ctx, view, theme, out, step, i + 1, x, yCards + i * (cardH + between), maxW, cardH);
+  });
+}
+
 function paintEducational(ctx, view, theme, out, bodyBottom) {
   const S = view.size;
   const gap = gapFor(view);
@@ -1274,11 +1624,17 @@ function paintEducational(ctx, view, theme, out, bodyBottom) {
   const x = S.marginX;
   const maxW = S.w - S.marginX * 2 - 1;
   const gapPx = view.resolvedLabelGap == null ? gap.logo : view.resolvedLabelGap;
+  const tagGap = gapIsSet(view, "labelToHeadline") ? chosenGap(view, "labelToHeadline", gap.tag) : gap.tag;
   let y = S.marginTop + S.logo + gapPx;
   const tag = drawTag(ctx, view.series, x, y, S.tag, maxW, out);
-  y = tag.bottom + gap.tag;
+  y = tag.bottom + tagGap;
   const reserve = S.key === "landscape" ? 176 : S.key === "square" ? 460 : 560;
   const head = renderText(ctx, out, textSpec(view, "headline", view.headline, x, y, maxW, 2, Math.max(range.min, bodyBottom - y - reserve), range, theme, rules));
+  const customCards = gapIsSet(view, "labelToHeadline") || gapIsSet(view, "headlineToSteps") || gapIsSet(view, "stepSpacing");
+  if (customCards) {
+    paintEducationalCards(ctx, view, theme, out, head, x, maxW, gap);
+    return;
+  }
   y = head.bottom + gap.afterHead;
   const zone = Math.max(80, bodyBottom - y);
   const stacked = S.key !== "landscape";
@@ -1355,7 +1711,12 @@ function drawCard(ctx, view, theme, out, step, index, x, y, w, h) {
     min: S.key === "landscape" ? 16 : 18, weight: 800, trackingEm: -0.02, lineHeight: 1.12,
     color: b.navy, highlight: b.navy, id: "step-title-" + index, label: "Step title", track: "support",
   });
-  const lineY = Math.max(cy + circle + 8, title.bottom + 6);
+  const lineY = gapIsSet(view, "stepLineSpacing")
+    ? Math.min(
+        Math.max(cy + circle, title.bottom + chosenGap(view, "stepLineSpacing", SETTINGS.rules.stepLineGap)),
+        Math.max(cy + circle, y + h - 14 - 16),
+      )
+    : Math.max(cy + circle + SETTINGS.rules.stepCircleClearance, title.bottom + SETTINGS.rules.stepLineGap);
   renderText(ctx, out, {
     text: step.line, x: titleX, y: lineY, maxWidth: x + w - padX - titleX,
     maxLines: 3, maxHeight: Math.max(16, y + h - 14 - lineY),
@@ -1396,6 +1757,9 @@ function paintFrame(canvas, view) {
   if (drawView.format === "insight") paintInsight(ctx, drawView, theme, out, footer.bodyBottom);
   if (drawView.format === "story") paintStory(ctx, drawView, theme, out, footer.bodyBottom);
   if (drawView.format === "educational") paintEducational(ctx, drawView, theme, out, footer.bodyBottom);
+  if (footer.sourcePlan && gapIsSet(drawView, "contextToSource")) {
+    placeContextSource(ctx, drawView, theme, out, footer.sourcePlan);
+  }
   footer.draw();
   drawRail(ctx, view);
   const range = headlineRange(view.format, view.sizeKey);
@@ -1405,6 +1769,13 @@ function paintFrame(canvas, view) {
   const labelGapLimit = placement.gap == null
     ? measuredLabelLimit(out.boxes, logoBottom, logoLabelGap, footer.bodyBottom)
     : placement.limit;
+  const measuredGaps = measureObjectGaps(out.boxes);
+  const gapLimits = measureGapLimits({
+    height: S.h,
+    rail: S.rail,
+    marginBottom: S.marginBottom,
+    boxes: out.boxes,
+  }, measuredGaps);
   return {
     width: S.w,
     height: S.h,
@@ -1424,6 +1795,8 @@ function paintFrame(canvas, view) {
     logoBottom,
     logoLabelGap,
     labelGapLimit,
+    measuredGaps,
+    gapLimits,
   };
 }
 
@@ -1435,20 +1808,66 @@ function designedSpacingLimit(view) {
 
 function paint(canvas, view) {
   const requested = view.labelGap;
+  const requestedGaps = {};
+  OBJECT_GAP_KEYS.forEach((key) => {
+    requestedGaps[key] = view.objectGaps ? view.objectGaps[key] : null;
+  });
   let layout = paintFrame(canvas, view);
-  if (requested == null || !Number.isFinite(Number(requested))) return layout;
-  let guard = 0;
-  while (textOverflowPx(layout) > 0.75 && guard < 8) {
-    guard += 1;
-    const gap = layout.logoLabelGap;
-    const next = Math.max(SETTINGS.logoLabelSpacing.min, Math.floor(gap - textOverflowPx(layout) - 1));
-    if (!Number.isFinite(gap) || next >= gap - 0.5) break;
-    layout = paintFrame(canvas, { ...view, labelGap: next });
-    layout.labelGapLimit = Math.min(layout.labelGapLimit, next);
+  let labelGap = view.labelGap;
+  let logoLimit = null;
+  if (requested != null && Number.isFinite(Number(requested))) {
+    let guard = 0;
+    while (textOverflowPx(layout) > 0.75 && guard < 8) {
+      guard += 1;
+      const gap = layout.logoLabelGap;
+      const next = Math.max(SETTINGS.logoLabelSpacing.min, Math.floor(gap - textOverflowPx(layout) - 1));
+      if (!Number.isFinite(gap) || next >= gap - 0.5) break;
+      labelGap = next;
+      layout = paintFrame(canvas, { ...view, labelGap: next });
+      layout.labelGapLimit = Math.min(layout.labelGapLimit, next);
+      logoLimit = layout.labelGapLimit;
+    }
   }
-  if (Number.isFinite(layout.logoLabelGap) && requested - layout.logoLabelGap >= 2) {
+  const anyObject = OBJECT_GAP_KEYS.some((key) => requestedGaps[key] != null);
+  if (anyObject) {
+    let workingGaps = { ...requestedGaps };
+    const skip = new Set();
+    let guard = 0;
+    while (textOverflowPx(layout) > 0.75 && guard < 16) {
+      guard += 1;
+      const working = { ...view, labelGap, objectGaps: workingGaps };
+      const key = lowestSetGap(working, layout, skip);
+      if (!key) break;
+      const measured = layout.measuredGaps[key];
+      const before = textOverflowPx(layout);
+      const next = Math.max(SETTINGS.objectGaps.min, Math.floor(measured - before - 1));
+      if (!Number.isFinite(measured) || next >= measured - 0.5) {
+        skip.add(key);
+        continue;
+      }
+      const previous = workingGaps[key];
+      workingGaps = { ...workingGaps, [key]: next };
+      const nextLayout = paintFrame(canvas, { ...view, labelGap, objectGaps: workingGaps });
+      if (textOverflowPx(nextLayout) >= before - 0.5) {
+        skip.add(key);
+        workingGaps = { ...workingGaps, [key]: previous };
+        layout = paintFrame(canvas, { ...view, labelGap, objectGaps: workingGaps });
+        continue;
+      }
+      layout = nextLayout;
+    }
+  }
+  if (logoLimit != null) layout.labelGapLimit = Math.min(layout.labelGapLimit, logoLimit);
+  if (requested != null && Number.isFinite(Number(requested)) && Number.isFinite(layout.logoLabelGap) && requested - layout.logoLabelGap >= 2) {
     if (!layout.warnings.includes(SPACING_CLAMP_WARNING)) layout.warnings.push(SPACING_CLAMP_WARNING);
   }
+  OBJECT_GAP_KEYS.forEach((key) => {
+    const req = requestedGaps[key];
+    const got = layout.measuredGaps && layout.measuredGaps[key];
+    if (req != null && Number.isFinite(got) && req - got >= 2) {
+      if (!layout.warnings.includes(GAP_CLAMP_WARNING)) layout.warnings.push(GAP_CLAMP_WARNING);
+    }
+  });
   return layout;
 }
 
@@ -1488,6 +1907,7 @@ function buildView(sizeKey) {
     photo: photoForState(),
     desaturate: state.useDefaultPhoto && state.format === "announcement" ? SETTINGS.samples.announcement.desaturate : 0,
     labelGap: state.logoLabelSpacing[key],
+    objectGaps: objectGapsForSize(key),
   };
 }
 
@@ -1500,6 +1920,9 @@ function designedLabelGap(sizeKey) {
   const view = buildView(key);
   if (fixed) return gapFor(view).logo;
   view.labelGap = null;
+  const clean = {};
+  OBJECT_GAP_KEYS.forEach((gapKey) => { clean[gapKey] = null; });
+  view.objectGaps = clean;
   const canvas = document.createElement("canvas");
   return paintFrame(canvas, view).logoLabelGap;
 }
@@ -1514,6 +1937,15 @@ function renderNow() {
   if (storedGap != null && lastLayout && Number.isFinite(lastLayout.logoLabelGap)) {
     const applied = clamp(Math.round(lastLayout.logoLabelGap), SETTINGS.logoLabelSpacing.min, SETTINGS.logoLabelSpacing.max);
     if (Math.abs(storedGap - applied) >= 2) state.logoLabelSpacing[state.size] = applied;
+  }
+  if (state.objectGaps && lastLayout && lastLayout.measuredGaps) {
+    OBJECT_GAP_KEYS.forEach((key) => {
+      const stored = state.objectGaps[key][state.size];
+      const applied = lastLayout.measuredGaps[key];
+      if (stored == null || !Number.isFinite(applied)) return;
+      const rounded = clamp(Math.round(applied), SETTINGS.objectGaps.min, SETTINGS.objectGaps.max);
+      if (Math.abs(stored - rounded) >= 2) state.objectGaps[key][state.size] = rounded;
+    });
   }
   fitPreview();
   showWarnings(lastLayout.warnings || []);
@@ -1577,6 +2009,42 @@ function updateOutputs() {
   spacing.max = String(sliderMax);
   spacingOut.textContent = shown + " px";
   spacing.value = String(shown);
+  updateGapControls();
+}
+
+function updateGapControls() {
+  if (!state.objectGaps) return;
+  SETTINGS.gapCatalog.forEach((item) => {
+    const wrap = document.querySelector(`[data-gap-wrap="${item.key}"]`);
+    const input = $("gap-" + item.key);
+    const output = $("gap-" + item.key + "-out");
+    if (!wrap || !input || !output) return;
+    const show = item.formats.includes(state.format) && (!item.sizes || item.sizes.includes(state.size));
+    wrap.hidden = !show;
+    if (!show) return;
+    const limits = SETTINGS.objectGaps;
+    const measured = lastLayout && lastLayout.measuredGaps ? lastLayout.measuredGaps[item.key] : null;
+    const stored = state.objectGaps[item.key][state.size];
+    const shown = stored == null
+      ? (measured == null || !Number.isFinite(measured) ? limits.min : Math.round(measured))
+      : (measured == null || !Number.isFinite(measured) ? stored : Math.round(measured));
+    const limit = lastLayout && lastLayout.gapLimits && Number.isFinite(lastLayout.gapLimits[item.key])
+      ? lastLayout.gapLimits[item.key]
+      : limits.max;
+    const sliderMax = Math.max(limits.min, limit, shown);
+    input.min = String(limits.min);
+    input.max = String(sliderMax);
+    output.textContent = shown + " px";
+    input.value = String(shown);
+  });
+}
+
+function designedObjectGap(sizeKey, key) {
+  const view = buildView(sizeKey);
+  view.objectGaps = { ...view.objectGaps, [key]: null };
+  const canvas = document.createElement("canvas");
+  const measured = paintFrame(canvas, view).measuredGaps[key];
+  return Number.isFinite(measured) ? measured : null;
 }
 
 function updateCaptionCount() {
@@ -1617,6 +2085,7 @@ function loadSample(format, sizeKey) {
   state.headlineSize = headlineRange(format, state.size).def;
   state.supportSize = SETTINGS.sizes[state.size].support.def;
   state.logoLabelSpacing = freshLabelSpacing();
+  state.objectGaps = freshObjectGaps();
   applyDefaultCrop();
   syncUI();
   renderNow();
@@ -1724,6 +2193,21 @@ function readForm(event) {
       }
     }
   }
+  if (target && target.dataset.gap && state.objectGaps[target.dataset.gap]) {
+    const key = target.dataset.gap;
+    const raw = String(target.value).trim();
+    if (raw !== "") {
+      const n = Math.round(Number(raw));
+      if (Number.isFinite(n)) {
+        const limits = SETTINGS.objectGaps;
+        const designed = designedObjectGap(state.size, key);
+        const clamped = clamp(n, limits.min, limits.max);
+        state.objectGaps[key][state.size] = designed != null && Math.abs(clamped - designed) <= 1
+          ? null
+          : clamped;
+      }
+    }
+  }
   state.steps = [1, 2, 3].map((i) => ({
     title: $(`step${i}Title`).value,
     line: $(`step${i}Line`).value,
@@ -1778,6 +2262,7 @@ function snapshot() {
       square: state.logoLabelSpacing.square,
       portrait: state.logoLabelSpacing.portrait,
     },
+    objectGaps: normalizeObjectGaps(state.objectGaps),
   };
 }
 
@@ -1868,6 +2353,7 @@ async function applyDesign(design) {
   const next = blankState();
   Object.assign(next, design);
   next.logoLabelSpacing = normalizeLabelSpacing(design && design.logoLabelSpacing);
+  next.objectGaps = normalizeObjectGaps(design && design.objectGaps);
   next.steps = (design.steps || next.steps).map((step) => ({ ...step }));
   next.photoImg = null;
   if (design.photoData && !design.useDefaultPhoto) {
@@ -1984,6 +2470,7 @@ function bindUI() {
     renderNow();
   });
   $("restoreSample").addEventListener("click", () => loadSample(state.format, state.size));
+  $("resetSpacing").addEventListener("click", resetSpacing);
   $("photoFile").addEventListener("change", async (event) => {
     const file = event.target.files && event.target.files[0];
     if (!file) return;
@@ -2072,8 +2559,41 @@ function bindUI() {
   window.addEventListener("resize", fitPreview);
 }
 
+function resetSpacing() {
+  state.logoLabelSpacing = freshLabelSpacing();
+  state.objectGaps = freshObjectGaps();
+  syncUI();
+  renderNow();
+}
+
+function buildGapControls() {
+  const host = $("gapControls");
+  if (!host) return;
+  host.replaceChildren();
+  SETTINGS.gapCatalog.forEach((item) => {
+    const wrap = document.createElement("div");
+    wrap.dataset.gapWrap = item.key;
+    const label = document.createElement("label");
+    label.htmlFor = "gap-" + item.key;
+    label.append(document.createTextNode(item.label + " "));
+    const output = document.createElement("output");
+    output.id = "gap-" + item.key + "-out";
+    label.append(output);
+    const input = document.createElement("input");
+    input.id = "gap-" + item.key;
+    input.type = "range";
+    input.min = String(SETTINGS.objectGaps.min);
+    input.max = String(SETTINGS.objectGaps.max);
+    input.value = "0";
+    input.dataset.gap = item.key;
+    wrap.append(label, input);
+    host.append(wrap);
+  });
+}
+
 async function init() {
   buildSteps();
+  buildGapControls();
   const preset = $("seriesPreset");
   SETTINGS.series.forEach((item) => {
     const option = document.createElement("option");

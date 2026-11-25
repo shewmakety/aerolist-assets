@@ -106,6 +106,8 @@ input[type="range"] {
   accent-color: #E31C23;
 }
 
+#resetSpacing { margin-top: 14px; }
+
 .format-list, .size-list { display: grid; gap: 6px; }
 
 .size-list { grid-template-columns: repeat(3, 1fr); }
