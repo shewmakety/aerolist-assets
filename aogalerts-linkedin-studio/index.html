@@ -27,6 +27,7 @@
           <button type="button" data-format="story" aria-pressed="false"><span>04</span> Aviation Story</button>
           <button type="button" data-format="educational" aria-pressed="false"><span>05</span> Educational</button>
           <button type="button" data-format="video" aria-pressed="false"><span>06</span> Video</button>
+          <button type="button" data-format="image" aria-pressed="false"><span>07</span> Image</button>
         </div>
       </section>
 
@@ -142,14 +143,21 @@
         <label for="photoFile">Upload</label>
         <input id="photoFile" type="file" accept="image/png,image/jpeg,image/webp">
         <button type="button" id="removePhoto" class="ghost">Use the default photo</button>
+        <div id="imageSizeField" hidden>
+          <label for="imageWidth">Image size <output id="imageWidthOut"></output></label>
+          <input id="imageWidth" type="range" min="180" max="720" value="460">
+          <p class="hint">Keeps the picture's own shape. Zoom and position crop inside the card.</p>
+        </div>
         <label for="photoZoom">Zoom <output id="photoZoomOut"></output></label>
         <input id="photoZoom" type="range" min="100" max="240" value="100">
         <label for="photoX">Horizontal position <output id="photoXOut"></output></label>
         <input id="photoX" type="range" min="0" max="100" value="50">
         <label for="photoY">Vertical position <output id="photoYOut"></output></label>
         <input id="photoY" type="range" min="0" max="100" value="50">
-        <label for="fade">Fade strength <output id="fadeOut"></output></label>
-        <input id="fade" type="range" min="0" max="100" value="70">
+        <div id="fadeField">
+          <label for="fade">Fade strength <output id="fadeOut"></output></label>
+          <input id="fade" type="range" min="0" max="100" value="70">
+        </div>
         <p id="photoNote" class="note" hidden></p>
       </section>
 

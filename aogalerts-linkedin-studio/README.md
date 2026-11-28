@@ -37,7 +37,7 @@ The Layout section also sets the vertical space between the objects stacked unde
 
 - Announcement: Label To Headline, Headline To Supporting, Supporting To CTA Line.
 - Statistic: Label To Figure, Figure To Statement (square and portrait), Statement To Context, Context To Source.
-- Insight, Aviation Story, and Video: Label To Headline, Headline To Supporting.
+- Insight, Aviation Story, Video, and Image: Label To Headline, Headline To Supporting.
 - Educational: Label To Headline, Headline To Steps, Step Spacing (square and portrait), Step Line Spacing.
 
 ## Video
@@ -45,6 +45,10 @@ The Layout section also sets the vertical space between the objects stacked unde
 Format 06 Video builds a branded card for a YouTube link. The copy stays in the left column. The thumbnail is a separate 16:9 image on the right, with the play button and the optional duration badge on that image. It is never stretched to fill the post. Watch, youtu.be, Shorts, and embed links are accepted. The page reads the 11-character video id and loads the thumbnail from this site at `GET /yt-thumb/{id}/maxresdefault.jpg`, then `hqdefault.jpg` if that file is missing or is YouTube's 120 pixel placeholder. Letterbox bars on the smaller thumbnail are cropped off. The browser never requests img.youtube.com, because that host would taint the canvas and block the PNG download. Upload a photo to replace the thumbnail. The fade, zoom, and position controls still apply inside the 16:9 frame.
 
 A valid link is added to the caption on its own line. If that link is already in the caption, it is not added again. The character counter includes it. Show duration adds a small text badge, such as 1:58, when you turn it on.
+
+## Image
+
+Format 07 Image puts an uploaded picture in a card on the right, in the same rounded frame as the video thumbnail, without a play button or a duration badge. The card uses the picture's own shape. Image size is a slider for each canvas size, from 180 px up to the room that is left. That room stops at the signature and the red rail, and it leaves at least 300 px for the text. Zoom and position crop inside the card. The file stays in this browser. Older saved designs load with the designed card width.
 
 `worker.js` serves the thumbnail route for local Wrangler. The live asset proxy has to allow the same route before its static allowlist. If the route is missing, the studio keeps the card and tells you to upload a photo. Opening this folder with `python3 -m http.server` does not proxy YouTube, so use Wrangler when you want the thumbnail loaded locally.
 
