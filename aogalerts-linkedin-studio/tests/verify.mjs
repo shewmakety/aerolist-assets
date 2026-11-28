@@ -760,21 +760,25 @@ for (const size of ["landscape", "square", "portrait"]) {
     const ctx = canvas.getContext("2d");
     const layout = window.AOG.getLayout();
     const play = layout.boxes.find((box) => box.id === "play");
+    const thumb = layout.boxes.find((box) => box.id === "thumb");
     const pixel = (x, y) => Array.from(ctx.getImageData(Math.round(x), Math.round(y), 1, 1).data);
     let exportError = "";
     try { canvas.toDataURL("image/png"); } catch (err) { exportError = String(err); }
-    const photo = pixel(play.x - 24, play.y + play.h * 0.25);
+    const textRight = Math.max(...layout.boxes.filter((box) => box.id === "tag" || box.id === "headline" || box.id === "support").map((box) => box.x + box.w));
     return {
       url: canvas.toDataURL("image/png"),
       w: canvas.width,
       h: canvas.height,
       exportError,
       play,
+      thumb,
+      textRight,
       tag: layout.boxes.find((box) => box.id === "tag"),
       white: pixel(play.x + 12, play.y + play.h / 2),
       red: pixel(play.x + play.w / 2, play.y + play.h / 2),
       rail: pixel(canvas.width / 2, canvas.height - 2),
-      photo,
+      photo: pixel(thumb.x + 18, thumb.y + 18),
+      gutter: pixel(thumb.x - 8, thumb.y + thumb.h / 2),
       gap: layout.logoLabelGap,
       measured: layout.measuredGaps,
       warnings: layout.warnings,
@@ -787,14 +791,21 @@ for (const size of ["landscape", "square", "portrait"]) {
   check(dim.w === expected.w && dim.h === expected.h, `video ${size} png ${dim.w}x${dim.h}`);
   check(!shot.exportError, `video ${size} export ${shot.exportError}`);
   check(shot.tag, `video ${size} missing series tag`);
-  check(shot.play && shot.play.x >= 0, `video ${size} missing play button`);
+  check(shot.play && shot.thumb, `video ${size} missing play button or thumbnail`);
+  check(Math.abs(shot.thumb.w / shot.thumb.h - 16 / 9) < 0.03, `video ${size} thumb ratio ${shot.thumb.w}x${shot.thumb.h}`);
+  check(shot.thumb.w <= expected.w * 0.52, `video ${size} thumb is too wide (${shot.thumb.w})`);
+  check(shot.thumb.w >= expected.w * 0.36, `video ${size} thumb is too small (${shot.thumb.w})`);
+  check(shot.textRight < shot.thumb.x - 8, `video ${size} text overlaps the thumbnail (${shot.textRight} vs ${shot.thumb.x})`);
+  check(shot.play.x >= shot.thumb.x && shot.play.x + shot.play.w <= shot.thumb.x + shot.thumb.w + 1, `video ${size} play button is outside the thumbnail`);
   check(shot.white[0] > 220 && shot.white[1] > 220 && shot.white[2] > 220, `video ${size} play circle ${shot.white.join(",")}`);
   check(shot.red[0] > 180 && shot.red[1] < 80 && shot.red[2] < 80, `video ${size} play triangle ${shot.red.join(",")}`);
   check(shot.rail[0] > 210 && shot.rail[1] < 50 && shot.rail[2] < 55, `video ${size} rail ${shot.rail.join(",")}`);
   check(!(shot.photo[0] === 9 && shot.photo[1] === 29 && shot.photo[2] === 59), `video ${size} thumbnail did not draw`);
+  check(shot.gutter[0] < 40 && shot.gutter[1] < 60 && shot.gutter[2] < 80, `video ${size} photo bleeds past the card ${shot.gutter.join(",")}`);
+  check(!shot.warnings.some((item) => /below the minimum/i.test(item)), `video ${size} sample text shrank: ${shot.warnings.join(" | ")}`);
   const fileName = size === "landscape" ? "video-1200x628.png" : size === "square" ? "video-1080x1080.png" : "video-1080x1350.png";
   await writeFile(`/opt/cursor/artifacts/${fileName}`, buf);
-  const expectedGap = { landscape: 200.08, square: 474.56, portrait: 734.2 }[size];
+  const expectedGap = { landscape: 26, square: 32, portrait: 40 }[size];
   const expectedTag = { landscape: 14, square: 16, portrait: 18 }[size];
   check(Math.abs(shot.gap - expectedGap) < 0.75, `video ${size} logo gap ${shot.gap}`);
   check(Math.abs(shot.measured.labelToHeadline - expectedTag) < 0.75, `video ${size} label gap ${shot.measured.labelToHeadline}`);

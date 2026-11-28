@@ -42,7 +42,7 @@ The Layout section also sets the vertical space between the objects stacked unde
 
 ## Video
 
-Format 06 Video builds a branded thumbnail card for a YouTube link. Watch, youtu.be, Shorts, and embed links are accepted. The page reads the 11-character video id and loads the thumbnail from this site at `GET /yt-thumb/{id}/maxresdefault.jpg`, then `hqdefault.jpg` if that file is missing or is YouTube's 120 pixel placeholder. The browser never requests img.youtube.com, because that host would taint the canvas and block the PNG download. Upload a photo to replace the thumbnail. The fade, zoom, and position controls still apply.
+Format 06 Video builds a branded card for a YouTube link. The copy stays in the left column. The thumbnail is a separate 16:9 image on the right, with the play button and the optional duration badge on that image. It is never stretched to fill the post. Watch, youtu.be, Shorts, and embed links are accepted. The page reads the 11-character video id and loads the thumbnail from this site at `GET /yt-thumb/{id}/maxresdefault.jpg`, then `hqdefault.jpg` if that file is missing or is YouTube's 120 pixel placeholder. Letterbox bars on the smaller thumbnail are cropped off. The browser never requests img.youtube.com, because that host would taint the canvas and block the PNG download. Upload a photo to replace the thumbnail. The fade, zoom, and position controls still apply inside the 16:9 frame.
 
 A valid link is added to the caption on its own line. If that link is already in the caption, it is not added again. The character counter includes it. Show duration adds a small text badge, such as 1:58, when you turn it on.
 

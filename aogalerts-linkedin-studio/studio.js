@@ -128,10 +128,15 @@ const SETTINGS = {
       },
       statistic: { landscape: { logo: 22 }, square: { logo: 28 }, portrait: { logo: 36 } },
       educational: { landscape: { logo: 20, tag: 12 }, square: { logo: 24 }, portrait: { logo: 28 } },
+      // The thumbnail is its own 16:9 card. widthRatio is a share of the canvas.
+      // Landscape is centered in the band under the logo. Square and portrait
+      // sit on the right, top-aligned with the series label, so the copy stays readable.
       video: {
-        landscape: { textWidth: 760 },
-        square: { textWidth: 700 },
-        portrait: { textWidth: 680 },
+        radius: 14,
+        border: 3,
+        landscape: { widthRatio: 0.47, gutter: 36, align: "center" },
+        square: { widthRatio: 0.4, gutter: 28, align: "text" },
+        portrait: { widthRatio: 0.42, gutter: 28, align: "text" },
       },
     },
   },
@@ -254,16 +259,16 @@ const SETTINGS = {
     video: {
       seriesId: "watch",
       background: "navy",
-      fade: 76,
+      fade: 12,
       headline: "Inside the hangar that puts an aircraft *back in the air*",
       support: "A short look at the work behind every return to service.",
       youtube: "https://www.youtube.com/watch?v=T3RRPQ_Csss",
       showDuration: false,
       duration: "1:58",
       crops: {
-        landscape: { zoom: 1.04, x: 58, y: 46 },
-        square: { zoom: 1.08, x: 62, y: 42 },
-        portrait: { zoom: 1.12, x: 64, y: 40 },
+        landscape: { zoom: 1, x: 50, y: 50 },
+        square: { zoom: 1, x: 50, y: 50 },
+        portrait: { zoom: 1, x: 50, y: 50 },
       },
     },
   },
@@ -427,7 +432,7 @@ function blockSize(boxes, id) {
 function contentBottom(boxes) {
   let bottom = 0;
   (boxes || []).forEach((box) => {
-    if (box.role === "signature" || box.id === "source" || box.id === "badge") return;
+    if (box.role === "signature" || box.id === "source" || box.id === "badge" || box.id === "thumb" || box.id === "play" || box.id === "duration") return;
     bottom = Math.max(bottom, box.y + box.h);
   });
   return bottom;
@@ -551,7 +556,7 @@ function measuredLabelLimit(boxes, logoBottom, gap, bodyBottom) {
   const limits = SETTINGS.logoLabelSpacing;
   let lowest = logoBottom + (Number.isFinite(gap) ? gap : 0);
   boxes.forEach((box) => {
-    if (box.role === "signature" || box.id === "source" || box.id === "badge") return;
+    if (box.role === "signature" || box.id === "source" || box.id === "badge" || box.id === "thumb" || box.id === "play" || box.id === "duration") return;
     lowest = Math.max(lowest, box.y + box.h);
   });
   const slack = Math.max(0, bodyBottom - lowest);
@@ -1492,6 +1497,10 @@ function drawBadge(ctx, badge, x, y, out) {
 function columnWidth(view) {
   const S = view.size;
   const gap = gapFor(view);
+  if (view.format === "video") {
+    const frame = videoFrame(view);
+    return Math.max(160, frame.x - frame.gutter - S.marginX);
+  }
   if (view.format === "announcement" && S.key === "landscape") {
     return Math.round(S.w * (gap.textRight || 0.6) - S.marginX) - 1;
   }
@@ -1942,37 +1951,83 @@ function drawCard(ctx, view, theme, out, step, index, x, y, w, h) {
   });
 }
 
-function playMetrics(view) {
-  const S = view.size;
-  const d = S.play;
-  const halo = Math.max(4, Math.round(d * 0.04));
-  const x = S.w - S.marginX - d - halo;
-  const contentTop = S.marginTop;
-  const limit = S.h - S.rail - S.marginBottom;
-  let y = Math.round((contentTop + limit - d) / 2);
-  y = clamp(y, contentTop, Math.max(contentTop, limit - d));
-  return { x, y, w: d, h: d, cx: x + d / 2, cy: y + d / 2, d, halo };
+function videoSpec(view) {
+  const block = SETTINGS.spacing.formats.video || {};
+  const size = block[view.size.key] || {};
+  return {
+    radius: block.radius || 14,
+    border: block.border || 3,
+    widthRatio: size.widthRatio || 0.46,
+    gutter: size.gutter || 32,
+    align: size.align || "center",
+  };
 }
 
-function paintDuration(ctx, view, out, play) {
+function videoFrame(view) {
+  const S = view.size;
+  const spec = videoSpec(view);
+  const gap = gapFor(view);
+  let w = Math.round(S.w * spec.widthRatio);
+  let h = Math.round(w * 9 / 16);
+  const floor = S.h - S.rail - S.marginBottom;
+  const ceiling = S.marginTop + S.logo + 8;
+  const maxH = Math.max(90, floor - ceiling);
+  if (h > maxH) {
+    h = maxH;
+    w = Math.round(h * 16 / 9);
+  }
+  const x = S.w - S.marginX - w;
+  const textTop = S.marginTop + S.logo + gap.logo;
+  let y = spec.align === "text"
+    ? textTop
+    : Math.round((ceiling + floor - h) / 2);
+  y = clamp(y, ceiling, Math.max(ceiling, floor - h));
+  return { x, y, w, h, gutter: spec.gutter, radius: spec.radius, border: spec.border };
+}
+
+function sixteenNineSource(img) {
+  const target = 16 / 9;
+  const ir = img.width / img.height;
+  if (ir > target + 0.02) {
+    const sh = img.height;
+    const sw = sh * target;
+    return { sx: (img.width - sw) / 2, sy: 0, sw, sh };
+  }
+  if (ir < target - 0.02) {
+    const sw = img.width;
+    const sh = sw / target;
+    return { sx: 0, sy: Math.max(0, (img.height - sh) / 2), sw, sh };
+  }
+  return { sx: 0, sy: 0, sw: img.width, sh: img.height };
+}
+
+function drawSixteenNine(ctx, img, frame, zoom, posX, posY) {
+  const base = sixteenNineSource(img);
+  const z = Math.max(1, zoom || 1);
+  let sw = base.sw / z;
+  let sh = base.sh / z;
+  if (sw > base.sw) { sh *= base.sw / sw; sw = base.sw; }
+  if (sh > base.sh) { sw *= base.sh / sh; sh = base.sh; }
+  const sx = base.sx + clamp((base.sw - sw) * (clamp(posX, 0, 100) / 100), 0, Math.max(0, base.sw - sw));
+  const sy = base.sy + clamp((base.sh - sh) * (clamp(posY, 0, 100) / 100), 0, Math.max(0, base.sh - sh));
+  ctx.drawImage(img, sx, sy, sw, sh, frame.x, frame.y, frame.w, frame.h);
+}
+
+function paintVideoDuration(ctx, view, out, frame) {
   const label = String(view.duration || "").trim();
   if (!view.showDuration || !label) return;
-  const S = view.size;
-  const size = S.key === "landscape" ? 16 : 18;
+  const size = frame.h < 280 ? 15 : 17;
   ctx.font = `800 ${size}px ${SETTINGS.fonts.family}`;
   const tw = measureTracked(ctx, label, 0);
-  const padX = Math.round(size * 0.55);
-  const padY = Math.round(size * 0.35);
+  const padX = Math.round(size * 0.5);
+  const padY = Math.round(size * 0.32);
   const w = tw + padX * 2;
   const h = size + padY * 2;
-  const limit = S.h - S.rail - S.marginBottom;
-  let x = play.x + (play.w - w) / 2;
-  let y = play.y + play.h + Math.round(size * 0.7);
-  if (y + h > limit) y = limit - h;
-  x = clamp(x, S.marginX, S.w - S.marginX - w);
-  y = clamp(y, S.marginTop, Math.max(S.marginTop, limit - h));
-  roundRect(ctx, x, y, w, h, 3);
-  ctx.fillStyle = rgba(SETTINGS.brand.navy, 0.9);
+  const inset = 12;
+  const x = frame.x + frame.w - inset - w;
+  const y = frame.y + frame.h - inset - h;
+  roundRect(ctx, x, y, w, h, 4);
+  ctx.fillStyle = rgba(SETTINGS.brand.navy, 0.88);
   ctx.fill();
   ctx.font = `800 ${size}px ${SETTINGS.fonts.family}`;
   ctx.fillStyle = SETTINGS.brand.white;
@@ -1987,29 +2042,77 @@ function paintDuration(ctx, view, out, play) {
   });
 }
 
-function paintPlayButton(ctx, view, out) {
-  const play = playMetrics(view);
-  const halo = play.halo;
+function paintVideoCard(ctx, view, out) {
+  const frame = videoFrame(view);
+  const radius = frame.radius;
+  ctx.save();
+  roundRect(ctx, frame.x, frame.y + 8, frame.w, frame.h, radius);
+  ctx.fillStyle = "rgba(0,0,0,0.38)";
+  ctx.fill();
+  ctx.restore();
+  ctx.save();
+  roundRect(ctx, frame.x, frame.y, frame.w, frame.h, radius);
+  ctx.clip();
+  if (view.photo) {
+    drawSixteenNine(ctx, view.photo, frame, view.photoZoom, view.photoX, view.photoY);
+    const fade = clamp(view.fade, 0, 100) / 100;
+    if (fade > 0) {
+      ctx.fillStyle = rgba(SETTINGS.brand.navy, fade * 0.4);
+      ctx.fillRect(frame.x, frame.y, frame.w, frame.h);
+    }
+  } else {
+    ctx.fillStyle = SETTINGS.brand.navy2;
+    ctx.fillRect(frame.x, frame.y, frame.w, frame.h);
+  }
+  ctx.restore();
+  ctx.save();
+  roundRect(ctx, frame.x, frame.y, frame.w, frame.h, radius);
+  ctx.strokeStyle = rgba(SETTINGS.brand.white, 0.78);
+  ctx.lineWidth = frame.border;
+  ctx.stroke();
+  ctx.restore();
+  out.boxes.push({ id: "thumb", role: "text", x: frame.x, y: frame.y, w: frame.w, h: frame.h });
+  const d = Math.round(Math.min(frame.h * 0.38, frame.w * 0.26));
+  const cx = frame.x + frame.w / 2;
+  const cy = frame.y + frame.h / 2;
   ctx.beginPath();
-  ctx.fillStyle = rgba(SETTINGS.brand.navy, 0.45);
-  ctx.arc(play.cx, play.cy, play.d / 2 + halo, 0, Math.PI * 2);
+  ctx.fillStyle = rgba(SETTINGS.brand.navy, 0.28);
+  ctx.arc(cx, cy, d / 2 + 5, 0, Math.PI * 2);
   ctx.fill();
   ctx.beginPath();
   ctx.fillStyle = SETTINGS.brand.white;
-  ctx.arc(play.cx, play.cy, play.d / 2, 0, Math.PI * 2);
+  ctx.arc(cx, cy, d / 2, 0, Math.PI * 2);
   ctx.fill();
-  const triH = play.d * 0.34;
-  const triW = play.d * 0.3;
-  const left = play.cx - triW * 0.32;
+  const triH = d * 0.34;
+  const triW = d * 0.3;
+  const left = cx - triW * 0.32;
   ctx.beginPath();
-  ctx.moveTo(left, play.cy - triH / 2);
-  ctx.lineTo(left + triW, play.cy);
-  ctx.lineTo(left, play.cy + triH / 2);
+  ctx.moveTo(left, cy - triH / 2);
+  ctx.lineTo(left + triW, cy);
+  ctx.lineTo(left, cy + triH / 2);
   ctx.closePath();
   ctx.fillStyle = SETTINGS.brand.red;
   ctx.fill();
-  out.boxes.push({ id: "play", role: "text", x: play.x, y: play.y, w: play.w, h: play.h });
-  paintDuration(ctx, view, out, play);
+  out.boxes.push({ id: "play", role: "text", x: cx - d / 2, y: cy - d / 2, w: d, h: d });
+  paintVideoDuration(ctx, view, out, frame);
+}
+
+function paintVideo(ctx, view, theme, out, bodyBottom) {
+  const S = view.size;
+  const gap = gapFor(view);
+  const rules = SETTINGS.rules;
+  const range = headlineRange(view.format, view.sizeKey);
+  const x = S.marginX;
+  const maxW = columnWidth(view);
+  const gapPx = view.resolvedLabelGap == null ? gap.logo : view.resolvedLabelGap;
+  const tagGap = gapIsSet(view, "labelToHeadline") ? chosenGap(view, "labelToHeadline", gap.tag) : gap.tag;
+  const headGap = gapIsSet(view, "headlineToSupport") ? chosenGap(view, "headlineToSupport", gap.afterHead) : gap.afterHead;
+  let y = S.marginTop + S.logo + gapPx;
+  const tag = drawTag(ctx, view.series, x, y, S.tag, maxW, out);
+  y = tag.bottom + tagGap;
+  const head = renderText(ctx, out, textSpec(view, "headline", view.headline, x, y, maxW, 4, Math.max(range.min, bodyBottom - y), range, theme, rules));
+  y = head.bottom + (String(view.support || "").trim() ? headGap : 0);
+  renderText(ctx, out, textSpec(view, "support", view.support, x, y, maxW, 3, Math.max(12, bodyBottom - y), S.support, theme, rules, false));
 }
 
 function paintFrame(canvas, view) {
@@ -2028,8 +2131,8 @@ function paintFrame(canvas, view) {
   ctx.fillRect(0, 0, S.w, S.h);
   let photoBottom = 0;
   if (view.format === "announcement") photoBottom = paintAnnouncementPhoto(ctx, view);
-  if (view.format === "story" || view.format === "video") paintStoryPhoto(ctx, view);
-  if (view.format === "video") paintPlayButton(ctx, view, out);
+  if (view.format === "story") paintStoryPhoto(ctx, view);
+  if (view.format === "video") paintVideoCard(ctx, view, out);
   if (view.format === "statistic") paintWatermark(ctx, view, theme);
   if (view.format === "insight") paintTriangle(ctx, view, theme);
   drawLogo(ctx, view);
@@ -2042,7 +2145,8 @@ function paintFrame(canvas, view) {
   if (drawView.format === "announcement") paintAnnouncement(ctx, drawView, theme, out, footer.bodyBottom, photoBottom);
   if (drawView.format === "statistic") paintStatistic(ctx, drawView, theme, out, footer.bodyBottom);
   if (drawView.format === "insight") paintInsight(ctx, drawView, theme, out, footer.bodyBottom);
-  if (drawView.format === "story" || drawView.format === "video") paintStory(ctx, drawView, theme, out, footer.bodyBottom);
+  if (drawView.format === "story") paintStory(ctx, drawView, theme, out, footer.bodyBottom);
+  if (drawView.format === "video") paintVideo(ctx, drawView, theme, out, footer.bodyBottom);
   if (drawView.format === "educational") paintEducational(ctx, drawView, theme, out, footer.bodyBottom);
   if (footer.sourcePlan && gapIsSet(drawView, "contextToSource")) {
     placeContextSource(ctx, drawView, theme, out, footer.sourcePlan);
@@ -2206,6 +2310,7 @@ function designedLabelGap(sizeKey) {
   const fixed = state.format === "statistic"
     || state.format === "insight"
     || state.format === "educational"
+    || state.format === "video"
     || (state.format === "announcement" && key === "landscape");
   const view = buildView(key);
   if (fixed) return gapFor(view).logo;
