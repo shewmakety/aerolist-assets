@@ -27,6 +27,7 @@ import { readFile, mkdir, writeFile, readdir } from "node:fs/promises";
 import { extname, join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
+import worker, { matchYouTubeThumb, fetchYouTubeThumb } from "../worker.js";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const sampleDir = join(root, "samples");
@@ -49,6 +50,19 @@ function pngSize(buf) {
 
 const server = createServer(async (req, res) => {
   const url = new URL(req.url, "http://127.0.0.1");
+  if (url.pathname.startsWith("/yt-thumb/")) {
+    const match = matchYouTubeThumb(url.pathname);
+    const request = new Request(url, { method: req.method || "GET" });
+    const response = match
+      ? await fetchYouTubeThumb(request, match)
+      : new Response("Not found", { status: 404, headers: { "content-type": "text/plain; charset=utf-8", "x-aog-thumb": "missing" } });
+    const headers = {};
+    response.headers.forEach((value, key) => { headers[key] = value; });
+    const body = Buffer.from(await response.arrayBuffer());
+    res.writeHead(response.status, headers);
+    res.end(body);
+    return;
+  }
   const path = join(root, decodeURIComponent(url.pathname === "/" ? "/index.html" : url.pathname));
   try {
     const body = await readFile(path);
@@ -68,6 +82,34 @@ function check(cond, message) {
   if (!cond) failures.push(message);
 }
 
+check(matchYouTubeThumb("/yt-thumb/T3RRPQ_Csss/maxresdefault.jpg")?.file === "maxresdefault", "thumb route did not match maxres");
+check(matchYouTubeThumb("/yt-thumb/T3RRPQ_Csss/hqdefault.jpg")?.id === "T3RRPQ_Csss", "thumb route did not match hq");
+check(matchYouTubeThumb("/yt-thumb/short/maxresdefault.jpg") == null, "short id was accepted");
+check(matchYouTubeThumb("/yt-thumb/T3RRPQ_CsssX/hqdefault.jpg") == null, "12-character id was accepted");
+check(matchYouTubeThumb("/yt-thumb/T3RRPQ_Csss/sddefault.jpg") == null, "sddefault was accepted");
+check(matchYouTubeThumb("/yt-thumb/%2e%2e/T3RRPQ_Csss/maxresdefault.jpg") == null, "encoded thumb path was accepted");
+check(matchYouTubeThumb("/yt-thumb/T3RRPQ_Csss/maxresdefault.jpg/extra") == null, "extra thumb path was accepted");
+
+const assetEnv = {
+  ASSETS: {
+    async fetch() {
+      return new Response("asset", { status: 200, headers: { "content-type": "text/plain" } });
+    },
+  },
+};
+const staticHit = await worker.fetch(new Request("http://127.0.0.1/index.html"), assetEnv);
+check(staticHit.status === 200 && await staticHit.text() === "asset", "static path did not reach the asset binding");
+const badThumb = await worker.fetch(new Request("http://127.0.0.1/yt-thumb/not-an-id/maxresdefault.jpg"), assetEnv);
+check(badThumb.status === 404 && badThumb.headers.get("x-aog-thumb") === "missing", `bad thumb path ${badThumb.status}`);
+const missingMax = await worker.fetch(new Request("http://127.0.0.1/yt-thumb/jNQXAC9IVRw/maxresdefault.jpg"), assetEnv);
+check(missingMax.status === 404 && missingMax.headers.get("x-aog-thumb") === "missing", `missing maxres ${missingMax.status} ${missingMax.headers.get("x-aog-thumb")}`);
+const hqThumb = await worker.fetch(new Request("http://127.0.0.1/yt-thumb/jNQXAC9IVRw/hqdefault.jpg"), assetEnv);
+const hqBytes = Buffer.from(await hqThumb.arrayBuffer());
+check(hqThumb.status === 200 && hqThumb.headers.get("content-type") === "image/jpeg" && hqThumb.headers.get("x-aog-thumb") === "ok" && hqBytes.length > 1000 && hqBytes[0] === 0xff, "hq thumbnail was not a jpeg");
+const maxThumb = await worker.fetch(new Request("http://127.0.0.1/yt-thumb/T3RRPQ_Csss/maxresdefault.jpg"), assetEnv);
+const maxBytes = Buffer.from(await maxThumb.arrayBuffer());
+check(maxThumb.status === 200 && maxThumb.headers.get("x-aog-thumb") === "ok" && maxBytes.length > 5000 && maxBytes[0] === 0xff, "maxres thumbnail was not a jpeg");
+
 const browser = await chromium.launch({
   channel: "chrome",
   headless: true,
@@ -76,11 +118,17 @@ const browser = await chromium.launch({
 const page = await browser.newPage({ viewport: { width: 1480, height: 1000 } });
 const consoleErrors = [];
 page.on("console", (msg) => {
-  if (msg.type() === "error") consoleErrors.push(msg.text());
+  if (msg.type() !== "error") return;
+  const text = msg.text();
+  // Chrome logs a generic 404 line with no URL. The response listener records the URL.
+  if (/^Failed to load resource: the server responded with a status of 404/.test(text)) return;
+  consoleErrors.push(text);
 });
 page.on("pageerror", (err) => consoleErrors.push(String(err)));
 page.on("response", (res) => {
-  if (res.status() >= 400) consoleErrors.push(`${res.status()} ${res.url()}`);
+  if (res.status() >= 400 && !(res.status() === 404 && res.url().includes("/yt-thumb/"))) {
+    consoleErrors.push(`${res.status()} ${res.url()}`);
+  }
 });
 
 await page.goto(`http://${SETTINGS.host}:${SETTINGS.port}/`, { waitUntil: "networkidle" });
@@ -388,7 +436,7 @@ const gapMoves = await page.evaluate(() => {
     return bad;
   };
   const rows = [];
-  for (const format of ["announcement", "statistic", "insight", "story", "educational"]) {
+  for (const format of ["announcement", "statistic", "insight", "story", "educational", "video"]) {
     for (const size of ["landscape", "square", "portrait"]) {
       window.AOG.loadSample(format, size);
       const catalog = window.AOG.SETTINGS.gapCatalog.filter((item) => item.formats.includes(format) && (!item.sizes || item.sizes.includes(size)));
@@ -594,6 +642,193 @@ await page.evaluate(() => {
   document.querySelector(".panel").scrollTop = 0;
 });
 await page.screenshot({ path: "/opt/cursor/artifacts/aogalerts-studio-ui.png" });
+
+const parsedLinks = await page.evaluate(() => {
+  const parse = window.AOG.parseYouTubeLink;
+  const cases = [
+    ["", ""],
+    ["https://www.youtube.com/watch?v=T3RRPQ_Csss", "T3RRPQ_Csss"],
+    ["https://www.youtube.com/watch?v=T3RRPQ_Csss&t=30s", "T3RRPQ_Csss"],
+    ["https://youtu.be/T3RRPQ_Csss", "T3RRPQ_Csss"],
+    ["https://youtu.be/T3RRPQ_Csss?t=12", "T3RRPQ_Csss"],
+    ["https://www.youtube.com/shorts/T3RRPQ_Csss/", "T3RRPQ_Csss"],
+    ["https://www.youtube.com/embed/T3RRPQ_Csss", "T3RRPQ_Csss"],
+    ["https://www.youtube-nocookie.com/embed/T3RRPQ_Csss?start=4", "T3RRPQ_Csss"],
+    ["https://m.youtube.com/watch?v=T3RRPQ_Csss", "T3RRPQ_Csss"],
+    ["youtube.com/watch?v=T3RRPQ_Csss", "T3RRPQ_Csss"],
+    ["https://vimeo.com/123456789", ""],
+    ["https://www.youtube.com/playlist?list=PL1234567890", ""],
+    ["https://www.youtube.com/watch?v=short", ""],
+    ["https://www.youtube.com/watch?v=T3RRPQ_CsssX", ""],
+  ];
+  return cases.map(([input, id]) => {
+    const parsed = parse(input);
+    return { input, id, got: parsed.id, message: parsed.message, url: parsed.url };
+  });
+});
+parsedLinks.forEach((row) => {
+  check(row.got === row.id, `parse "${row.input}" -> "${row.got}" ${row.message}`);
+  if (row.id) check(row.url === `https://www.youtube.com/watch?v=${row.id}` && !row.message, `canonical "${row.input}"`);
+  if (!row.id && row.input) check(row.message.length > 12, `missing message for "${row.input}"`);
+});
+
+await page.evaluate(() => {
+  window.AOG.loadSample("video", "landscape");
+  const orig = window.fetch;
+  window.__origFetch = orig;
+  window.fetch = (input, init) => {
+    const url = String(input);
+    if (url.includes("/yt-thumb/")) {
+      return Promise.resolve(new Response("no", {
+        status: 502,
+        headers: { "content-type": "text/plain", "x-aog-thumb": "unavailable" },
+      }));
+    }
+    return orig(input, init);
+  };
+  const input = document.getElementById("youtubeUrl");
+  input.value = "https://youtu.be/T3RRPQ_Csss";
+  input.dispatchEvent(new Event("input", { bubbles: true }));
+});
+await page.waitForFunction(() => window.AOG.getState().youtubeStatus === "error", null, { timeout: 10000 });
+const routeNote = await page.textContent("#photoNote");
+const routeStatus = await page.textContent("#status");
+check(/upload a photo/i.test(routeNote || ""), `route failure note was "${routeNote}"`);
+check(/upload a photo/i.test(routeStatus || ""), `route failure status was "${routeStatus}"`);
+const routeExport = await page.evaluate(() => {
+  try {
+    const url = document.getElementById("preview").toDataURL("image/png");
+    return url.startsWith("data:image/png");
+  } catch (err) {
+    return String(err);
+  }
+});
+check(routeExport === true, `route failure export ${routeExport}`);
+await page.evaluate(() => { window.fetch = window.__origFetch; });
+
+await page.evaluate(() => window.AOG.loadSample("video", "landscape"));
+await page.waitForFunction(() => {
+  const state = window.AOG.getState();
+  return state.youtubeStatus === "ready" || state.youtubeStatus === "error";
+}, null, { timeout: 20000 });
+const loadedVideo = await page.evaluate(() => window.AOG.getState());
+check(loadedVideo.youtubeStatus === "ready", `thumbnail ${loadedVideo.youtubeStatus} ${loadedVideo.youtubeMessage}`);
+check(loadedVideo.youtubeId === "T3RRPQ_Csss", `video id ${loadedVideo.youtubeId}`);
+check(loadedVideo.series === "Watch", `series label ${loadedVideo.series}`);
+const caption = await page.inputValue("#caption");
+check((caption.split("https://www.youtube.com/watch?v=T3RRPQ_Csss").length - 1) === 1, `caption link count in "${caption}"`);
+check(caption.endsWith("https://www.youtube.com/watch?v=T3RRPQ_Csss"), "caption did not end with the YouTube link");
+const captionCount = (await page.textContent("#captionCount")).replace(/,/g, "");
+check(captionCount.startsWith(String(caption.length) + " /"), `counter "${captionCount}" for ${caption.length} characters`);
+
+await page.fill("#youtubeUrl", "https://www.youtube.com/shorts/T3RRPQ_Csss");
+const sameCaption = await page.inputValue("#caption");
+check(sameCaption === caption, "another form of the same link duplicated the caption");
+
+await page.fill("#caption", "Post copy\nhttps://www.youtube.com/watch?v=T3RRPQ_Csss");
+await page.fill("#youtubeUrl", "https://www.youtube.com/embed/jNQXAC9IVRw");
+await page.waitForFunction(() => {
+  const state = window.AOG.getState();
+  return state.youtubeId === "jNQXAC9IVRw" && (state.youtubeStatus === "ready" || state.youtubeStatus === "error");
+}, null, { timeout: 20000 });
+const fallback = await page.evaluate(() => window.AOG.getState());
+check(fallback.youtubeStatus === "ready", `hq fallback ${fallback.youtubeStatus} ${fallback.youtubeMessage}`);
+const fallbackCaption = await page.inputValue("#caption");
+check((fallbackCaption.match(/https:\/\/www\.youtube\.com\/watch\?v=jNQXAC9IVRw/g) || []).length === 1, `fallback caption "${fallbackCaption}"`);
+check(!fallbackCaption.includes("T3RRPQ_Csss"), "old link stayed in the caption");
+
+await page.fill("#youtubeUrl", "https://vimeo.com/123456789");
+const vimeoError = await page.textContent("#youtubeError");
+check(/not a YouTube URL/i.test(vimeoError || ""), `vimeo message "${vimeoError}"`);
+await page.fill("#youtubeUrl", "https://www.youtube.com/watch?v=short");
+const shortError = await page.textContent("#youtubeError");
+check(/11 characters/i.test(shortError || ""), `short id message "${shortError}"`);
+
+await page.fill("#youtubeUrl", "https://www.youtube.com/watch?v=T3RRPQ_Csss");
+await page.waitForFunction(() => window.AOG.getState().youtubeStatus === "ready" && window.AOG.getState().youtubeId === "T3RRPQ_Csss", null, { timeout: 20000 });
+await page.evaluate(() => window.AOG.loadSample("video", "landscape"));
+const restoredCaption = await page.inputValue("#caption");
+check((restoredCaption.match(/watch\?v=T3RRPQ_Csss/g) || []).length === 1, `restored caption "${restoredCaption}"`);
+
+await mkdir("/opt/cursor/artifacts", { recursive: true });
+const videoShots = [];
+for (const size of ["landscape", "square", "portrait"]) {
+  await page.evaluate((size) => window.AOG.loadSample("video", size), size);
+  await page.waitForFunction(() => window.AOG.getState().youtubeStatus === "ready", null, { timeout: 20000 });
+  const shot = await page.evaluate(() => {
+    const canvas = document.getElementById("preview");
+    const ctx = canvas.getContext("2d");
+    const layout = window.AOG.getLayout();
+    const play = layout.boxes.find((box) => box.id === "play");
+    const pixel = (x, y) => Array.from(ctx.getImageData(Math.round(x), Math.round(y), 1, 1).data);
+    let exportError = "";
+    try { canvas.toDataURL("image/png"); } catch (err) { exportError = String(err); }
+    const photo = pixel(play.x - 24, play.y + play.h * 0.25);
+    return {
+      url: canvas.toDataURL("image/png"),
+      w: canvas.width,
+      h: canvas.height,
+      exportError,
+      play,
+      tag: layout.boxes.find((box) => box.id === "tag"),
+      white: pixel(play.x + 12, play.y + play.h / 2),
+      red: pixel(play.x + play.w / 2, play.y + play.h / 2),
+      rail: pixel(canvas.width / 2, canvas.height - 2),
+      photo,
+      gap: layout.logoLabelGap,
+      measured: layout.measuredGaps,
+      warnings: layout.warnings,
+    };
+  });
+  videoShots.push({ size, ...shot, url: undefined });
+  const buf = Buffer.from(shot.url.split(",")[1], "base64");
+  const dim = pngSize(buf);
+  const expected = SETTINGS.sizes[size];
+  check(dim.w === expected.w && dim.h === expected.h, `video ${size} png ${dim.w}x${dim.h}`);
+  check(!shot.exportError, `video ${size} export ${shot.exportError}`);
+  check(shot.tag, `video ${size} missing series tag`);
+  check(shot.play && shot.play.x >= 0, `video ${size} missing play button`);
+  check(shot.white[0] > 220 && shot.white[1] > 220 && shot.white[2] > 220, `video ${size} play circle ${shot.white.join(",")}`);
+  check(shot.red[0] > 180 && shot.red[1] < 80 && shot.red[2] < 80, `video ${size} play triangle ${shot.red.join(",")}`);
+  check(shot.rail[0] > 210 && shot.rail[1] < 50 && shot.rail[2] < 55, `video ${size} rail ${shot.rail.join(",")}`);
+  check(!(shot.photo[0] === 9 && shot.photo[1] === 29 && shot.photo[2] === 59), `video ${size} thumbnail did not draw`);
+  const fileName = size === "landscape" ? "video-1200x628.png" : size === "square" ? "video-1080x1080.png" : "video-1080x1350.png";
+  await writeFile(`/opt/cursor/artifacts/${fileName}`, buf);
+  const expectedGap = { landscape: 200.08, square: 474.56, portrait: 734.2 }[size];
+  const expectedTag = { landscape: 14, square: 16, portrait: 18 }[size];
+  check(Math.abs(shot.gap - expectedGap) < 0.75, `video ${size} logo gap ${shot.gap}`);
+  check(Math.abs(shot.measured.labelToHeadline - expectedTag) < 0.75, `video ${size} label gap ${shot.measured.labelToHeadline}`);
+  check(Math.abs(shot.measured.headlineToSupport - expectedTag) < 0.75, `video ${size} support gap ${shot.measured.headlineToSupport}`);
+  notes.push(`video ${size} logo gap ${shot.gap} object ${JSON.stringify(shot.measured)}`);
+}
+
+await page.evaluate(() => window.AOG.loadSample("video", "landscape"));
+await page.waitForFunction(() => window.AOG.getState().youtubeStatus === "ready", null, { timeout: 20000 });
+await page.check("#showDuration");
+const durationOn = await page.evaluate(() => {
+  const box = window.AOG.getLayout().boxes.find((item) => item.id === "duration");
+  const canvas = document.getElementById("preview");
+  return { text: box ? box.text : "", url: canvas.toDataURL("image/png") };
+});
+check(durationOn.text === "1:58", `duration badge "${durationOn.text}"`);
+await writeFile("/opt/cursor/artifacts/video-duration-1200x628.png", Buffer.from(durationOn.url.split(",")[1], "base64"));
+await page.uncheck("#showDuration");
+const durationOff = await page.evaluate(() => window.AOG.getLayout().boxes.some((item) => item.id === "duration"));
+check(durationOff === false, "duration badge stayed on after uncheck");
+
+await page.setViewportSize({ width: 1680, height: 1100 });
+await page.evaluate(() => {
+  window.AOG.loadSample("video", "landscape");
+  document.querySelector(".panel").scrollTop = 0;
+});
+await page.waitForFunction(() => window.AOG.getState().youtubeStatus === "ready", null, { timeout: 20000 });
+await page.screenshot({ path: "/opt/cursor/artifacts/video-studio.png" });
+await page.evaluate(() => {
+  const panel = document.querySelector(".panel");
+  const field = document.getElementById("youtubeUrl");
+  if (field && panel) panel.scrollTop = Math.max(0, field.offsetTop - 80);
+});
+await page.locator(".panel").screenshot({ path: "/opt/cursor/artifacts/video-panel.png" });
 
 check(consoleErrors.length === 0, `console errors: ${consoleErrors.join(" | ")}`);
 check(saved.length === 15, `saved ${saved.length} samples`);

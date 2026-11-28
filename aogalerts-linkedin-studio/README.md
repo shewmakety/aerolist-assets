@@ -1,6 +1,6 @@
 # AOG Alerts LinkedIn Publishing Studio
 
-A browser-only page that builds branded AOG Alerts corporate LinkedIn images. It is for announcements, statistics, insights, aviation stories, and explainers. It is not for alert posts.
+A browser-only page that builds branded AOG Alerts corporate LinkedIn images. It is for announcements, statistics, insights, aviation stories, explainers, and video thumbnails. It is not for alert posts.
 
 ## Open Locally
 
@@ -37,8 +37,16 @@ The Layout section also sets the vertical space between the objects stacked unde
 
 - Announcement: Label To Headline, Headline To Supporting, Supporting To CTA Line.
 - Statistic: Label To Figure, Figure To Statement (square and portrait), Statement To Context, Context To Source.
-- Insight and Aviation Story: Label To Headline, Headline To Supporting.
+- Insight, Aviation Story, and Video: Label To Headline, Headline To Supporting.
 - Educational: Label To Headline, Headline To Steps, Step Spacing (square and portrait), Step Line Spacing.
+
+## Video
+
+Format 06 Video builds a branded thumbnail card for a YouTube link. Watch, youtu.be, Shorts, and embed links are accepted. The page reads the 11-character video id and loads the thumbnail from this site at `GET /yt-thumb/{id}/maxresdefault.jpg`, then `hqdefault.jpg` if that file is missing or is YouTube's 120 pixel placeholder. The browser never requests img.youtube.com, because that host would taint the canvas and block the PNG download. Upload a photo to replace the thumbnail. The fade, zoom, and position controls still apply.
+
+A valid link is added to the caption on its own line. If that link is already in the caption, it is not added again. The character counter includes it. Show duration adds a small text badge, such as 1:58, when you turn it on.
+
+`worker.js` serves the thumbnail route for local Wrangler. The live asset proxy has to allow the same route before its static allowlist. If the route is missing, the studio keeps the card and tells you to upload a photo. Opening this folder with `python3 -m http.server` does not proxy YouTube, so use Wrangler when you want the thumbnail loaded locally.
 
 Each slider starts at the designed gap for the open format and size, so the sample layouts do not change until you move it. Each size stores its own pixel value. A size left at the designed gap stays there, including when you export all 3 sizes. The gap will not let objects overlap or pass the signature or the red rail. Long lines still shrink, and the shrink warning still appears.
 
