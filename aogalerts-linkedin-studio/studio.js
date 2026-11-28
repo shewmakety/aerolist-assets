@@ -68,6 +68,7 @@ const SETTINGS = {
     { id: "return-to-service", label: "Return to Service" },
     { id: "aog-explained", label: "AOG Explained" },
     { id: "watch", label: "Watch" },
+    { id: "in-focus", label: "In Focus" },
   ],
   icons: [
     ["plane", "Plane"],
@@ -140,6 +141,21 @@ const SETTINGS = {
       },
     },
   },
+  // Image card width, in px at that canvas size. null keeps the designed width.
+  // The live maximum is the smaller of maxWidth, the safe area, and the room
+  // left after minText. A tall picture lowers the maximum so the card still fits.
+  imageCard: {
+    radius: 14,
+    border: 3,
+    minWidth: 180,
+    maxWidth: 720,
+    minText: 300,
+    placeholderRatio: 1.5,
+    defWidth: { landscape: 460, square: 400, portrait: 420 },
+    gutter: { landscape: 36, square: 28, portrait: 28 },
+    align: { landscape: "center", square: "text", portrait: "text" },
+    emptyNote: "Upload a PNG, JPEG, or WebP. It stays in this browser.",
+  },
   // Distance from the logo bottom to the series label, in px at that size.
   // def null keeps the designed layout for every format and size.
   // A design stores one number per size. Export uses each size's own value.
@@ -163,8 +179,8 @@ const SETTINGS = {
   // One control per vertical gap. sizes limits a control to those canvases.
   // above/below are the box ids the gap sits between.
   gapCatalog: [
-    { key: "labelToHeadline", label: "Label To Headline", formats: ["announcement", "insight", "story", "educational", "video"], above: "tag", below: "headline" },
-    { key: "headlineToSupport", label: "Headline To Supporting", formats: ["announcement", "insight", "story", "video"], above: "headline", below: "support" },
+    { key: "labelToHeadline", label: "Label To Headline", formats: ["announcement", "insight", "story", "educational", "video", "image"], above: "tag", below: "headline" },
+    { key: "headlineToSupport", label: "Headline To Supporting", formats: ["announcement", "insight", "story", "video", "image"], above: "headline", below: "support" },
     { key: "supportToCta", label: "Supporting To CTA Line", formats: ["announcement"], above: "support", below: "cta" },
     { key: "labelToFigure", label: "Label To Figure", formats: ["statistic"], above: "tag", below: "number" },
     { key: "figureToStatement", label: "Figure To Statement", formats: ["statistic"], sizes: ["square", "portrait"], above: "number", below: "statement" },
@@ -181,6 +197,7 @@ const SETTINGS = {
     story: { label: "Aviation Story", headline: true, support: true, cta: false, photo: true, statistic: false, steps: false, backgrounds: null },
     educational: { label: "Educational", headline: true, support: false, cta: false, photo: false, statistic: false, steps: true, backgrounds: ["paper", "white", "navy"], supportSizeLabel: "Card text size" },
     video: { label: "Video", headline: true, support: true, cta: false, photo: true, statistic: false, steps: false, video: true, backgrounds: null },
+    image: { label: "Image", headline: true, support: true, cta: false, photo: true, statistic: false, steps: false, image: true, backgrounds: null },
   },
   // Same-origin thumbnail route. worker.js and the live asset proxy both serve it.
   // img.youtube.com is cross-origin and would taint the canvas, so the page never requests it.
@@ -271,6 +288,18 @@ const SETTINGS = {
         portrait: { zoom: 1, x: 50, y: 50 },
       },
     },
+    image: {
+      seriesId: "in-focus",
+      background: "navy",
+      fade: 0,
+      headline: "One picture from the *hangar floor*",
+      support: "The work that gets an aircraft back in the air.",
+      crops: {
+        landscape: { zoom: 1, x: 50, y: 50 },
+        square: { zoom: 1, x: 50, y: 50 },
+        portrait: { zoom: 1, x: 50, y: 50 },
+      },
+    },
   },
 };
 
@@ -325,6 +354,7 @@ function blankState() {
     showDuration: false,
     duration: "",
     logoLabelSpacing: { landscape: null, square: null, portrait: null },
+    imageWidth: { landscape: null, square: null, portrait: null },
     objectGaps: freshObjectGaps(),
   };
 }
@@ -432,7 +462,7 @@ function blockSize(boxes, id) {
 function contentBottom(boxes) {
   let bottom = 0;
   (boxes || []).forEach((box) => {
-    if (box.role === "signature" || box.id === "source" || box.id === "badge" || box.id === "thumb" || box.id === "play" || box.id === "duration") return;
+    if (box.role === "signature" || box.id === "source" || box.id === "badge" || box.id === "thumb" || box.id === "play" || box.id === "duration" || box.id === "image") return;
     bottom = Math.max(bottom, box.y + box.h);
   });
   return bottom;
@@ -556,7 +586,7 @@ function measuredLabelLimit(boxes, logoBottom, gap, bodyBottom) {
   const limits = SETTINGS.logoLabelSpacing;
   let lowest = logoBottom + (Number.isFinite(gap) ? gap : 0);
   boxes.forEach((box) => {
-    if (box.role === "signature" || box.id === "source" || box.id === "badge" || box.id === "thumb" || box.id === "play" || box.id === "duration") return;
+    if (box.role === "signature" || box.id === "source" || box.id === "badge" || box.id === "thumb" || box.id === "play" || box.id === "duration" || box.id === "image") return;
     lowest = Math.max(lowest, box.y + box.h);
   });
   const slack = Math.max(0, bodyBottom - lowest);
@@ -584,7 +614,7 @@ function textOverflowPx(layout) {
 }
 
 function isDark(view) {
-  if (view.format === "announcement" || view.format === "story" || view.format === "video") return true;
+  if (view.format === "announcement" || view.format === "story" || view.format === "video" || view.format === "image") return true;
   return view.background === "navy";
 }
 
@@ -1501,6 +1531,10 @@ function columnWidth(view) {
     const frame = videoFrame(view);
     return Math.max(160, frame.x - frame.gutter - S.marginX);
   }
+  if (view.format === "image") {
+    const frame = imageFrame(view);
+    return Math.max(SETTINGS.imageCard.minText, frame.x - frame.gutter - S.marginX);
+  }
   if (view.format === "announcement" && S.key === "landscape") {
     return Math.round(S.w * (gap.textRight || 0.6) - S.marginX) - 1;
   }
@@ -2097,6 +2131,115 @@ function paintVideoCard(ctx, view, out) {
   paintVideoDuration(ctx, view, out, frame);
 }
 
+function imageAspect(view) {
+  const img = view && view.photo;
+  if (img && img.width > 0 && img.height > 0) return img.width / img.height;
+  return SETTINGS.imageCard.placeholderRatio;
+}
+
+function imageCardLimits(view) {
+  const S = view.size;
+  const spec = SETTINGS.imageCard;
+  const gutter = spec.gutter[S.key];
+  const ceiling = S.marginTop + S.logo + 8;
+  const floor = S.h - S.rail - S.marginBottom - (S.signature + 16);
+  const maxH = Math.max(80, floor - ceiling);
+  const aspect = imageAspect(view);
+  const maxByHeight = Math.floor(maxH * aspect);
+  const maxByText = Math.floor(S.w - S.marginX * 2 - gutter - spec.minText);
+  const max = Math.max(spec.minWidth, Math.min(spec.maxWidth, maxByHeight, maxByText));
+  const min = Math.min(spec.minWidth, max);
+  return { min, max, aspect, gutter, ceiling, floor, maxH };
+}
+
+function imageFrame(view) {
+  const S = view.size;
+  const spec = SETTINGS.imageCard;
+  const limits = imageCardLimits(view);
+  const gap = gapFor(view);
+  const designed = spec.defWidth[S.key];
+  const requested = view.imageWidth;
+  let w = requested == null || !Number.isFinite(Number(requested)) ? designed : Math.round(Number(requested));
+  w = clamp(w, limits.min, limits.max);
+  let h = Math.max(1, Math.round(w / limits.aspect));
+  if (h > limits.maxH) {
+    h = limits.maxH;
+    w = clamp(Math.round(h * limits.aspect), limits.min, limits.max);
+    h = Math.max(1, Math.round(w / limits.aspect));
+  }
+  const x = S.w - S.marginX - w;
+  const textTop = S.marginTop + S.logo + gap.logo;
+  let y = spec.align[S.key] === "text"
+    ? textTop
+    : Math.round((limits.ceiling + limits.floor - h) / 2);
+  y = clamp(y, limits.ceiling, Math.max(limits.ceiling, limits.floor - h));
+  return { x, y, w, h, gutter: limits.gutter, radius: spec.radius, border: spec.border, limits };
+}
+
+function drawImageInFrame(ctx, img, frame, zoom, posX, posY) {
+  const z = Math.max(1, zoom || 1);
+  const ir = img.width / img.height;
+  const r = frame.w / frame.h;
+  let sw;
+  let sh;
+  if (ir > r) {
+    sh = img.height / z;
+    sw = sh * r;
+  } else {
+    sw = img.width / z;
+    sh = sw / r;
+  }
+  if (sw > img.width) { sh *= img.width / sw; sw = img.width; }
+  if (sh > img.height) { sw *= img.height / sh; sh = img.height; }
+  const sx = clamp((img.width - sw) * (clamp(posX, 0, 100) / 100), 0, Math.max(0, img.width - sw));
+  const sy = clamp((img.height - sh) * (clamp(posY, 0, 100) / 100), 0, Math.max(0, img.height - sh));
+  ctx.drawImage(img, sx, sy, sw, sh, frame.x, frame.y, frame.w, frame.h);
+}
+
+function paintImageCard(ctx, view, out) {
+  const frame = imageFrame(view);
+  const radius = frame.radius;
+  ctx.save();
+  roundRect(ctx, frame.x, frame.y + 8, frame.w, frame.h, radius);
+  ctx.fillStyle = "rgba(0,0,0,0.38)";
+  ctx.fill();
+  ctx.restore();
+  ctx.save();
+  roundRect(ctx, frame.x, frame.y, frame.w, frame.h, radius);
+  ctx.clip();
+  if (view.photo) drawImageInFrame(ctx, view.photo, frame, view.photoZoom, view.photoX, view.photoY);
+  else {
+    ctx.fillStyle = SETTINGS.brand.navy2;
+    ctx.fillRect(frame.x, frame.y, frame.w, frame.h);
+  }
+  ctx.restore();
+  ctx.save();
+  roundRect(ctx, frame.x, frame.y, frame.w, frame.h, radius);
+  ctx.strokeStyle = rgba(SETTINGS.brand.white, 0.78);
+  ctx.lineWidth = frame.border;
+  ctx.stroke();
+  ctx.restore();
+  out.boxes.push({ id: "image", role: "text", x: frame.x, y: frame.y, w: frame.w, h: frame.h });
+}
+
+function paintImage(ctx, view, theme, out, bodyBottom) {
+  const S = view.size;
+  const gap = gapFor(view);
+  const rules = SETTINGS.rules;
+  const range = headlineRange(view.format, view.sizeKey);
+  const x = S.marginX;
+  const maxW = columnWidth(view);
+  const gapPx = view.resolvedLabelGap == null ? gap.logo : view.resolvedLabelGap;
+  const tagGap = gapIsSet(view, "labelToHeadline") ? chosenGap(view, "labelToHeadline", gap.tag) : gap.tag;
+  const headGap = gapIsSet(view, "headlineToSupport") ? chosenGap(view, "headlineToSupport", gap.afterHead) : gap.afterHead;
+  let y = S.marginTop + S.logo + gapPx;
+  const tag = drawTag(ctx, view.series, x, y, S.tag, maxW, out);
+  y = tag.bottom + tagGap;
+  const head = renderText(ctx, out, textSpec(view, "headline", view.headline, x, y, maxW, 4, Math.max(range.min, bodyBottom - y), range, theme, rules));
+  y = head.bottom + (String(view.support || "").trim() ? headGap : 0);
+  renderText(ctx, out, textSpec(view, "support", view.support, x, y, maxW, 3, Math.max(12, bodyBottom - y), S.support, theme, rules, false));
+}
+
 function paintVideo(ctx, view, theme, out, bodyBottom) {
   const S = view.size;
   const gap = gapFor(view);
@@ -2133,6 +2276,7 @@ function paintFrame(canvas, view) {
   if (view.format === "announcement") photoBottom = paintAnnouncementPhoto(ctx, view);
   if (view.format === "story") paintStoryPhoto(ctx, view);
   if (view.format === "video") paintVideoCard(ctx, view, out);
+  if (view.format === "image") paintImageCard(ctx, view, out);
   if (view.format === "statistic") paintWatermark(ctx, view, theme);
   if (view.format === "insight") paintTriangle(ctx, view, theme);
   drawLogo(ctx, view);
@@ -2147,6 +2291,7 @@ function paintFrame(canvas, view) {
   if (drawView.format === "insight") paintInsight(ctx, drawView, theme, out, footer.bodyBottom);
   if (drawView.format === "story") paintStory(ctx, drawView, theme, out, footer.bodyBottom);
   if (drawView.format === "video") paintVideo(ctx, drawView, theme, out, footer.bodyBottom);
+  if (drawView.format === "image") paintImage(ctx, drawView, theme, out, footer.bodyBottom);
   if (drawView.format === "educational") paintEducational(ctx, drawView, theme, out, footer.bodyBottom);
   if (footer.sourcePlan && gapIsSet(drawView, "contextToSource")) {
     placeContextSource(ctx, drawView, theme, out, footer.sourcePlan);
@@ -2188,6 +2333,7 @@ function paintFrame(canvas, view) {
     labelGapLimit,
     measuredGaps,
     gapLimits,
+    imageCard: view.format === "image" ? imageFrame(view) : null,
   };
 }
 
@@ -2301,6 +2447,7 @@ function buildView(sizeKey) {
     duration: state.duration,
     desaturate: state.useDefaultPhoto && state.format === "announcement" ? SETTINGS.samples.announcement.desaturate : 0,
     labelGap: state.logoLabelSpacing[key],
+    imageWidth: state.imageWidth ? state.imageWidth[key] : null,
     objectGaps: objectGapsForSize(key),
   };
 }
@@ -2311,6 +2458,7 @@ function designedLabelGap(sizeKey) {
     || state.format === "insight"
     || state.format === "educational"
     || state.format === "video"
+    || state.format === "image"
     || (state.format === "announcement" && key === "landscape");
   const view = buildView(key);
   if (fixed) return gapFor(view).logo;
@@ -2333,6 +2481,11 @@ function renderNow() {
     const applied = clamp(Math.round(lastLayout.logoLabelGap), SETTINGS.logoLabelSpacing.min, SETTINGS.logoLabelSpacing.max);
     if (Math.abs(storedGap - applied) >= 2) state.logoLabelSpacing[state.size] = applied;
   }
+  if (state.format === "image" && state.imageWidth && lastLayout && lastLayout.imageCard) {
+    const storedWidth = state.imageWidth[state.size];
+    const appliedWidth = lastLayout.imageCard.w;
+    if (storedWidth != null && Math.abs(storedWidth - appliedWidth) >= 2) state.imageWidth[state.size] = appliedWidth;
+  }
   if (state.objectGaps && lastLayout && lastLayout.measuredGaps) {
     OBJECT_GAP_KEYS.forEach((key) => {
       const stored = state.objectGaps[key][state.size];
@@ -2349,9 +2502,10 @@ function renderNow() {
   $("preview").setAttribute("aria-label", `${SETTINGS.formats[state.format].label} preview, ${S.w} by ${S.h}`);
   const stockPhoto = (state.format === "announcement" || state.format === "story") && state.useDefaultPhoto;
   const videoNote = videoPhotoNote();
-  $("photoNote").hidden = !(stockPhoto || videoNote);
+  const imageNote = state.format === "image" && state.useDefaultPhoto ? SETTINGS.imageCard.emptyNote : "";
+  $("photoNote").hidden = !(stockPhoto || videoNote || imageNote);
   $("photoNote").className = state.format === "video" && state.youtubeStatus === "error" && state.useDefaultPhoto ? "warning" : "note";
-  $("photoNote").textContent = stockPhoto ? SETTINGS.ui.photoNote : videoNote;
+  $("photoNote").textContent = stockPhoto ? SETTINGS.ui.photoNote : (imageNote || videoNote);
   if ($("youtubeError")) {
     $("youtubeError").hidden = !state.youtubeError;
     $("youtubeError").textContent = state.youtubeError || "";
@@ -2427,6 +2581,24 @@ function updateOutputs() {
   spacingOut.textContent = shown + " px";
   spacing.value = String(shown);
   updateGapControls();
+  updateImageWidth();
+}
+
+function updateImageWidth() {
+  const wrap = $("imageSizeField");
+  const input = $("imageWidth");
+  const output = $("imageWidthOut");
+  if (!wrap || !input || !output) return;
+  const show = state.format === "image";
+  wrap.hidden = !show;
+  if (!show || !state.imageWidth) return;
+  const frame = lastLayout && lastLayout.imageCard ? lastLayout.imageCard : imageFrame(buildView(state.size));
+  const limits = frame.limits || imageCardLimits(buildView(state.size));
+  const shown = frame.w;
+  input.min = String(limits.min);
+  input.max = String(Math.max(limits.min, limits.max, shown));
+  input.value = String(shown);
+  output.textContent = shown + " px";
 }
 
 function updateGapControls() {
@@ -2504,6 +2676,7 @@ function loadSample(format, sizeKey) {
   state.showDuration = Boolean(sample.showDuration);
   state.duration = sample.duration || "";
   state.logoLabelSpacing = freshLabelSpacing();
+  state.imageWidth = freshSizeMap();
   state.objectGaps = freshObjectGaps();
   applyDefaultCrop();
   setYouTubeLink(sample.youtube || "", { caption: format === "video", force: format === "video" });
@@ -2566,7 +2739,11 @@ function syncUI() {
   $("photoField").hidden = !spec.photo;
   $("backgroundField").hidden = !spec.backgrounds;
   if ($("videoField")) $("videoField").hidden = !spec.video;
-  if ($("removePhoto")) $("removePhoto").textContent = spec.video ? "Use the YouTube thumbnail" : "Use the default photo";
+  if ($("fadeField")) $("fadeField").hidden = Boolean(spec.image);
+  if ($("imageSizeField")) $("imageSizeField").hidden = !spec.image;
+  if ($("removePhoto")) {
+    $("removePhoto").textContent = spec.image ? "Remove image" : spec.video ? "Use the YouTube thumbnail" : "Use the default photo";
+  }
   $("headlineSizeLabel").textContent = spec.headlineSizeLabel || "Headline size";
   $("supportSizeLabel").textContent = spec.supportSizeLabel || "Supporting size";
   updateOutputs();
@@ -2620,6 +2797,20 @@ function readForm(event) {
         state.logoLabelSpacing[state.size] = designed != null && Math.abs(clamped - designed) <= 1
           ? null
           : clamped;
+      }
+    }
+  }
+  if (target && target.id === "imageWidth" && state.imageWidth) {
+    const raw = String(target.value).trim();
+    if (raw !== "") {
+      const n = Math.round(Number(raw));
+      if (Number.isFinite(n)) {
+        const spec = SETTINGS.imageCard;
+        const probe = buildView(state.size);
+        probe.imageWidth = null;
+        const designed = imageFrame(probe).w;
+        const clamped = clamp(n, spec.minWidth, spec.maxWidth);
+        state.imageWidth[state.size] = Math.abs(clamped - designed) <= 1 ? null : clamped;
       }
     }
   }
@@ -2700,6 +2891,7 @@ function snapshot() {
       square: state.logoLabelSpacing.square,
       portrait: state.logoLabelSpacing.portrait,
     },
+    imageWidth: normalizeSizeMap(state.imageWidth, { min: SETTINGS.imageCard.minWidth, max: SETTINGS.imageCard.maxWidth }),
     objectGaps: normalizeObjectGaps(state.objectGaps),
   };
 }
@@ -2791,6 +2983,7 @@ async function applyDesign(design) {
   const next = blankState();
   Object.assign(next, design);
   next.logoLabelSpacing = normalizeLabelSpacing(design && design.logoLabelSpacing);
+  next.imageWidth = normalizeSizeMap(design && design.imageWidth, { min: SETTINGS.imageCard.minWidth, max: SETTINGS.imageCard.maxWidth });
   next.objectGaps = normalizeObjectGaps(design && design.objectGaps);
   next.steps = (design.steps || next.steps).map((step) => ({ ...step }));
   next.photoImg = null;

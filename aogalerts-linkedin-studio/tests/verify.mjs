@@ -436,7 +436,7 @@ const gapMoves = await page.evaluate(() => {
     return bad;
   };
   const rows = [];
-  for (const format of ["announcement", "statistic", "insight", "story", "educational", "video"]) {
+  for (const format of ["announcement", "statistic", "insight", "story", "educational", "video", "image"]) {
     for (const size of ["landscape", "square", "portrait"]) {
       window.AOG.loadSample(format, size);
       const catalog = window.AOG.SETTINGS.gapCatalog.filter((item) => item.formats.includes(format) && (!item.sizes || item.sizes.includes(size)));
@@ -840,6 +840,90 @@ await page.evaluate(() => {
   if (field && panel) panel.scrollTop = Math.max(0, field.offsetTop - 80);
 });
 await page.locator(".panel").screenshot({ path: "/opt/cursor/artifacts/video-panel.png" });
+
+await page.setViewportSize({ width: 1680, height: 1100 });
+await page.evaluate(() => window.AOG.loadSample("image", "landscape"));
+const imageLimits = {};
+await page.setInputFiles("#photoFile", join(root, "photos/engine-cfm56.jpg"));
+await page.waitForFunction(() => window.AOG.getState().useDefaultPhoto === false && window.AOG.getState().format === "image", null, { timeout: 20000 });
+for (const size of ["landscape", "square", "portrait"]) {
+  await page.evaluate((size) => window.AOG.loadSample("image", size), size);
+  await page.setInputFiles("#photoFile", join(root, "photos/engine-cfm56.jpg"));
+  await page.waitForFunction(() => window.AOG.getState().useDefaultPhoto === false, null, { timeout: 20000 });
+  const bounds = await page.evaluate(() => {
+    const input = document.getElementById("imageWidth");
+    const readout = document.getElementById("imageWidthOut").textContent;
+    return {
+      min: Number(input.min),
+      max: Number(input.max),
+      value: Number(input.value),
+      readout,
+      numberBox: Boolean(document.getElementById("imageWidthNum")),
+      label: document.querySelector("label[for='imageWidth']").childNodes[0].textContent.trim(),
+    };
+  });
+  imageLimits[size] = bounds;
+  check(bounds.label === "Image size", `${size} image slider label`);
+  check(/^\d+ px$/.test(bounds.readout) && !bounds.numberBox, `${size} image readout ${bounds.readout}`);
+  check(bounds.min === 180 && bounds.max > bounds.min, `${size} image range ${bounds.min}-${bounds.max}`);
+  for (const edge of ["min", "max"]) {
+    await page.evaluate((value) => {
+      const input = document.getElementById("imageWidth");
+      input.value = String(value);
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+    }, bounds[edge]);
+    const shot = await page.evaluate(() => {
+      const canvas = document.getElementById("preview");
+      const layout = window.AOG.getLayout();
+      const card = layout.imageCard;
+      const textRight = Math.max(...layout.boxes.filter((box) => box.id === "tag" || box.id === "headline" || box.id === "support").map((box) => box.x + box.w));
+      let exportError = "";
+      try { canvas.toDataURL("image/png"); } catch (err) { exportError = String(err); }
+      const state = window.AOG.getState();
+      return {
+        url: canvas.toDataURL("image/png"),
+        exportError,
+        card,
+        textRight,
+        play: layout.boxes.some((box) => box.id === "play" || box.id === "duration"),
+        width: state.imageWidth,
+        aspect: card ? card.w / card.h : 0,
+      };
+    });
+    check(!shot.exportError, `${size} ${edge} export ${shot.exportError}`);
+    check(shot.card && !shot.play, `${size} ${edge} card or play button`);
+    check(Math.abs(shot.aspect - 3200 / 2133) < 0.04, `${size} ${edge} aspect ${shot.aspect}`);
+    check(shot.textRight < shot.card.x - 8, `${size} ${edge} text overlaps the image`);
+    check(shot.card.w >= 180 && shot.card.w <= bounds.max + 1, `${size} ${edge} width ${shot.card.w}`);
+    const fileName = `image-${size}-${edge}.png`;
+    await writeFile(`/opt/cursor/artifacts/${fileName}`, Buffer.from(shot.url.split(",")[1], "base64"));
+  }
+}
+notes.push(`image slider ${JSON.stringify(imageLimits)}`);
+await page.click('[data-size="landscape"]');
+await page.evaluate(() => {
+  const input = document.getElementById("imageWidth");
+  input.value = "180";
+  input.dispatchEvent(new Event("input", { bubbles: true }));
+});
+await page.click('[data-size="square"]');
+const perSize = await page.evaluate(() => window.AOG.getState().imageWidth);
+check(perSize.landscape === 180 && perSize.square == null, `image width per size ${JSON.stringify(perSize)}`);
+const exportedImage = JSON.parse(await page.evaluate(() => {
+  const design = window.AOG.getState();
+  window.AOG.importDesignsJSON(JSON.stringify({
+    kind: "aogalerts-linkedin-designs",
+    version: 1,
+    designs: [{ id: "image-size", name: "Image Size", design }],
+  }));
+  return window.AOG.exportDesignsJSON();
+}));
+const savedImage = exportedImage.designs.find((item) => item.name === "Image Size");
+check(savedImage && savedImage.design.imageWidth.landscape === 180 && savedImage.design.imageWidth.square == null, "JSON missed the image size");
+await page.evaluate(() => {
+  document.querySelector(".panel").scrollTop = 0;
+});
+await page.screenshot({ path: "/opt/cursor/artifacts/image-studio.png" });
 
 check(consoleErrors.length === 0, `console errors: ${consoleErrors.join(" | ")}`);
 check(saved.length === 15, `saved ${saved.length} samples`);
