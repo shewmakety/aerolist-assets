@@ -26,6 +26,7 @@
           <button type="button" data-format="insight" aria-pressed="false"><span>03</span> Insight / Opinion</button>
           <button type="button" data-format="story" aria-pressed="false"><span>04</span> Aviation Story</button>
           <button type="button" data-format="educational" aria-pressed="false"><span>05</span> Educational</button>
+          <button type="button" data-format="video" aria-pressed="false"><span>06</span> Video</button>
         </div>
       </section>
 
@@ -116,6 +117,21 @@
             <option value="paper">Paper</option>
             <option value="white">White</option>
           </select>
+        </div>
+
+        <div id="videoField" hidden>
+          <label for="youtubeUrl">YouTube link</label>
+          <input id="youtubeUrl" type="text" autocomplete="off" placeholder="https://www.youtube.com/watch?v=">
+          <p id="youtubeError" class="warning" hidden></p>
+          <p class="hint">Watch, youtu.be, Shorts, and embed links work. A valid link is added to the caption on its own line.</p>
+          <label class="check" for="showDuration">
+            <input id="showDuration" type="checkbox">
+            Show duration
+          </label>
+          <div id="durationWrap" hidden>
+            <label for="duration">Duration</label>
+            <input id="duration" maxlength="12" autocomplete="off" placeholder="2:45">
+          </div>
         </div>
 
         <button type="button" id="restoreSample" class="ghost">Restore sample copy</button>

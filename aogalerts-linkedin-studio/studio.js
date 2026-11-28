@@ -67,6 +67,7 @@ const SETTINGS = {
     { id: "the-aog-view", label: "The AOG View" },
     { id: "return-to-service", label: "Return to Service" },
     { id: "aog-explained", label: "AOG Explained" },
+    { id: "watch", label: "Watch" },
   ],
   icons: [
     ["plane", "Plane"],
@@ -88,7 +89,7 @@ const SETTINGS = {
       headline: { min: 54, max: 62, def: 58 },
       headlineCompact: { min: 44, max: 46, def: 46 },
       support: { min: 22, max: 25, def: 23 },
-      numberSize: 240, sourceSize: 16, badgeSize: 12, triangle: 214,
+      numberSize: 240, sourceSize: 16, badgeSize: 12, triangle: 214, play: 128,
     },
     square: {
       key: "square", w: 1080, h: 1080,
@@ -97,7 +98,7 @@ const SETTINGS = {
       headline: { min: 58, max: 76, def: 64 },
       headlineCompact: { min: 58, max: 76, def: 64 },
       support: { min: 26, max: 32, def: 28 },
-      numberSize: 280, sourceSize: 18, badgeSize: 13, triangle: 268,
+      numberSize: 280, sourceSize: 18, badgeSize: 13, triangle: 268, play: 156,
     },
     portrait: {
       key: "portrait", w: 1080, h: 1350,
@@ -106,7 +107,7 @@ const SETTINGS = {
       headline: { min: 58, max: 76, def: 66 },
       headlineCompact: { min: 58, max: 76, def: 66 },
       support: { min: 26, max: 32, def: 28 },
-      numberSize: 300, sourceSize: 18, badgeSize: 13, triangle: 300,
+      numberSize: 300, sourceSize: 18, badgeSize: 13, triangle: 300, play: 168,
     },
   },
   spacing: {
@@ -127,6 +128,11 @@ const SETTINGS = {
       },
       statistic: { landscape: { logo: 22 }, square: { logo: 28 }, portrait: { logo: 36 } },
       educational: { landscape: { logo: 20, tag: 12 }, square: { logo: 24 }, portrait: { logo: 28 } },
+      video: {
+        landscape: { textWidth: 760 },
+        square: { textWidth: 700 },
+        portrait: { textWidth: 680 },
+      },
     },
   },
   // Distance from the logo bottom to the series label, in px at that size.
@@ -152,8 +158,8 @@ const SETTINGS = {
   // One control per vertical gap. sizes limits a control to those canvases.
   // above/below are the box ids the gap sits between.
   gapCatalog: [
-    { key: "labelToHeadline", label: "Label To Headline", formats: ["announcement", "insight", "story", "educational"], above: "tag", below: "headline" },
-    { key: "headlineToSupport", label: "Headline To Supporting", formats: ["announcement", "insight", "story"], above: "headline", below: "support" },
+    { key: "labelToHeadline", label: "Label To Headline", formats: ["announcement", "insight", "story", "educational", "video"], above: "tag", below: "headline" },
+    { key: "headlineToSupport", label: "Headline To Supporting", formats: ["announcement", "insight", "story", "video"], above: "headline", below: "support" },
     { key: "supportToCta", label: "Supporting To CTA Line", formats: ["announcement"], above: "support", below: "cta" },
     { key: "labelToFigure", label: "Label To Figure", formats: ["statistic"], above: "tag", below: "number" },
     { key: "figureToStatement", label: "Figure To Statement", formats: ["statistic"], sizes: ["square", "portrait"], above: "number", below: "statement" },
@@ -169,6 +175,25 @@ const SETTINGS = {
     insight: { label: "Insight / Opinion", headline: true, support: true, cta: false, photo: false, statistic: false, steps: false, backgrounds: ["white", "paper", "navy"] },
     story: { label: "Aviation Story", headline: true, support: true, cta: false, photo: true, statistic: false, steps: false, backgrounds: null },
     educational: { label: "Educational", headline: true, support: false, cta: false, photo: false, statistic: false, steps: true, backgrounds: ["paper", "white", "navy"], supportSizeLabel: "Card text size" },
+    video: { label: "Video", headline: true, support: true, cta: false, photo: true, statistic: false, steps: false, video: true, backgrounds: null },
+  },
+  // Same-origin thumbnail route. worker.js and the live asset proxy both serve it.
+  // img.youtube.com is cross-origin and would taint the canvas, so the page never requests it.
+  youtube: {
+    thumbRoute: "/yt-thumb/{id}/{file}.jpg",
+    files: ["maxresdefault", "hqdefault"],
+    placeholderMaxEdge: 120,
+    idPattern: "^[A-Za-z0-9_-]{11}$",
+    watchUrl: "https://www.youtube.com/watch?v={id}",
+    emptyHint: "Add a YouTube link to use its thumbnail, or upload a photo.",
+    loading: "Loading the YouTube thumbnail...",
+    routeError: "The YouTube thumbnail could not be loaded from this site. Upload a photo instead.",
+    missingError: "YouTube has no thumbnail for that video. Upload a photo instead.",
+    captionFull: "The caption is full, so the YouTube link was not added. Shorten the caption, then edit the link.",
+    invalidUrl: "Enter a YouTube link. Watch, youtu.be, Shorts, and embed links all work.",
+    wrongHost: "That link is not a YouTube URL. Use a watch, youtu.be, Shorts, or embed link.",
+    missingId: "That YouTube link has no video id. Use a watch, youtu.be, Shorts, or embed link.",
+    badId: "That video id is not valid. YouTube video ids are 11 characters.",
   },
   samples: {
     announcement: {
@@ -226,6 +251,21 @@ const SETTINGS = {
         { title: "Quotes come in", line: "They unlock the details and send a quote. You choose.", icon: "message" },
       ],
     },
+    video: {
+      seriesId: "watch",
+      background: "navy",
+      fade: 76,
+      headline: "Inside the hangar that puts an aircraft *back in the air*",
+      support: "A short look at the work behind every return to service.",
+      youtube: "https://www.youtube.com/watch?v=T3RRPQ_Csss",
+      showDuration: false,
+      duration: "1:58",
+      crops: {
+        landscape: { zoom: 1.04, x: 58, y: 46 },
+        square: { zoom: 1.08, x: 62, y: 42 },
+        portrait: { zoom: 1.12, x: 64, y: 40 },
+      },
+    },
   },
 };
 
@@ -267,10 +307,24 @@ function blankState() {
     photoData: null,
     photoImg: null,
     caption: "",
+    captionLinkedUrl: "",
+    youtubeUrl: "",
+    youtubeId: "",
+    youtubeCanonical: "",
+    youtubeLoadedId: "",
+    youtubeImg: null,
+    youtubeObjectUrl: "",
+    youtubeStatus: "",
+    youtubeMessage: "",
+    youtubeError: "",
+    showDuration: false,
+    duration: "",
     logoLabelSpacing: { landscape: null, square: null, portrait: null },
     objectGaps: freshObjectGaps(),
   };
 }
+
+let thumbToken = 0;
 
 function clamp(n, a, b) { return Math.max(a, Math.min(b, n)); }
 
@@ -525,7 +579,7 @@ function textOverflowPx(layout) {
 }
 
 function isDark(view) {
-  if (view.format === "announcement" || view.format === "story") return true;
+  if (view.format === "announcement" || view.format === "story" || view.format === "video") return true;
   return view.background === "navy";
 }
 
@@ -557,6 +611,168 @@ function loadImage(src) {
     img.onerror = () => reject(new Error("Could not load " + src));
     img.src = src;
   });
+}
+
+function parseYouTubeLink(input) {
+  const y = SETTINGS.youtube;
+  const raw = String(input || "").trim().replace(/^["']+|["']+$/g, "");
+  if (!raw) return { id: "", url: "", message: "" };
+  let candidate = raw;
+  if (!/^[a-z][a-z0-9+.-]*:/i.test(candidate)) candidate = "https://" + candidate;
+  let url;
+  try {
+    url = new URL(candidate);
+  } catch (err) {
+    return { id: "", url: "", message: y.invalidUrl };
+  }
+  if (url.protocol !== "http:" && url.protocol !== "https:") {
+    return { id: "", url: "", message: y.invalidUrl };
+  }
+  const host = url.hostname.replace(/\.$/, "").replace(/^www\./i, "").toLowerCase();
+  const site = host === "youtube.com" || host === "m.youtube.com" || host === "music.youtube.com" || host === "youtube-nocookie.com";
+  const short = host === "youtu.be";
+  if (!site && !short) return { id: "", url: "", message: y.wrongHost };
+  const parts = url.pathname.split("/").filter(Boolean).map((part) => {
+    try { return decodeURIComponent(part); } catch (err) { return part; }
+  });
+  let id = "";
+  if (short) id = parts[0] || "";
+  else if (parts[0] === "shorts" || parts[0] === "embed") id = parts[1] || "";
+  else if (parts[0] === "watch" || url.searchParams.has("v")) id = url.searchParams.get("v") || "";
+  id = id.trim();
+  if (!id) return { id: "", url: "", message: y.missingId };
+  if (!new RegExp(y.idPattern).test(id)) return { id: "", url: "", message: y.badId };
+  return { id, url: y.watchUrl.replace("{id}", id), message: "" };
+}
+
+function thumbRoute(id, file) {
+  if (!SETTINGS.youtube.files.includes(file)) throw new Error(SETTINGS.youtube.routeError);
+  return SETTINGS.youtube.thumbRoute.replace("{id}", id).replace("{file}", file);
+}
+
+function releaseThumbUrl(url) {
+  if (url) URL.revokeObjectURL(url);
+}
+
+async function fetchThumbFile(id, file) {
+  let response;
+  try {
+    response = await fetch(thumbRoute(id, file));
+  } catch (err) {
+    return { route: true };
+  }
+  const mark = response.headers.get("x-aog-thumb") || "";
+  if (!response.ok || mark === "missing" || mark === "unavailable") {
+    return { missing: response.status === 404 && mark === "missing", route: mark !== "missing" };
+  }
+  const type = response.headers.get("content-type") || "";
+  if (!type.startsWith("image/") || mark !== "ok") return { route: true };
+  const blob = await response.blob();
+  const objectUrl = URL.createObjectURL(blob);
+  try {
+    const img = await loadImage(objectUrl);
+    const edge = SETTINGS.youtube.placeholderMaxEdge;
+    const placeholder = img.naturalWidth <= edge || img.naturalHeight <= edge;
+    return { img, url: objectUrl, placeholder };
+  } catch (err) {
+    releaseThumbUrl(objectUrl);
+    return { route: true };
+  }
+}
+
+async function fetchBestThumb(id) {
+  let routeFailed = false;
+  for (const file of SETTINGS.youtube.files) {
+    const result = await fetchThumbFile(id, file);
+    if (result.img && !result.placeholder) return result;
+    if (result.url) releaseThumbUrl(result.url);
+    if (result.route) routeFailed = true;
+  }
+  throw new Error(routeFailed ? SETTINGS.youtube.routeError : SETTINGS.youtube.missingError);
+}
+
+async function loadYouTubeThumbnail(id) {
+  const token = ++thumbToken;
+  state.youtubeStatus = "loading";
+  state.youtubeMessage = "";
+  try {
+    const best = await fetchBestThumb(id);
+    if (token !== thumbToken || state.youtubeId !== id) {
+      releaseThumbUrl(best.url);
+      return;
+    }
+    releaseThumbUrl(state.youtubeObjectUrl);
+    state.youtubeObjectUrl = best.url;
+    state.youtubeImg = best.img;
+    state.youtubeStatus = "ready";
+    state.youtubeMessage = "";
+  } catch (err) {
+    if (token !== thumbToken || state.youtubeId !== id) return;
+    state.youtubeImg = null;
+    state.youtubeStatus = "error";
+    state.youtubeMessage = err.message || SETTINGS.youtube.routeError;
+  }
+  if (state.format === "video" && state.youtubeId === id) renderNow();
+}
+
+function captionIncludesVideo(text, id) {
+  if (!id) return false;
+  return String(text || "").split("\n").some((line) => line.includes(id));
+}
+
+function syncVideoCaption() {
+  const previous = state.captionLinkedUrl || "";
+  let text = String(state.caption || "").replace(/\s+$/, "");
+  if (previous) {
+    const lines = text.split("\n");
+    if (lines.length && lines[lines.length - 1].trim() === previous) {
+      lines.pop();
+      text = lines.join("\n").replace(/\s+$/, "");
+    }
+  }
+  const next = state.youtubeCanonical || "";
+  const id = state.youtubeId || "";
+  if (next && !captionIncludesVideo(text, id)) {
+    const composed = text ? text + "\n" + next : next;
+    if (composed.length <= SETTINGS.ui.captionMax) {
+      text = composed;
+      state.captionLinkedUrl = next;
+    } else {
+      state.captionLinkedUrl = "";
+      state.youtubeError = state.youtubeError || SETTINGS.youtube.captionFull;
+    }
+  } else if (next && text.split("\n").pop().trim() === next) {
+    state.captionLinkedUrl = next;
+  } else {
+    state.captionLinkedUrl = "";
+  }
+  state.caption = text;
+  if ($("caption")) $("caption").value = text;
+  updateCaptionCount();
+}
+
+function setYouTubeLink(raw, opts) {
+  const parsed = parseYouTubeLink(raw);
+  const prevCanonical = state.youtubeCanonical || "";
+  state.youtubeUrl = String(raw || "");
+  state.youtubeError = parsed.message;
+  const sameVideo = Boolean(parsed.id) && parsed.id === state.youtubeId && parsed.url === prevCanonical;
+  state.youtubeId = parsed.id;
+  state.youtubeCanonical = parsed.url;
+  if (!parsed.id) {
+    thumbToken += 1;
+    state.youtubeLoadedId = "";
+    state.youtubeImg = null;
+    state.youtubeStatus = "";
+    state.youtubeMessage = "";
+  } else if (!sameVideo || !state.youtubeImg) {
+    state.youtubeLoadedId = parsed.id;
+    if (!sameVideo) state.youtubeImg = null;
+    state.youtubeStatus = "loading";
+    state.youtubeMessage = "";
+    loadYouTubeThumbnail(parsed.id);
+  }
+  if (opts && opts.caption && (opts.force || parsed.url !== prevCanonical)) syncVideoCaption();
 }
 
 function scratchCanvas(w, h) {
@@ -1726,6 +1942,76 @@ function drawCard(ctx, view, theme, out, step, index, x, y, w, h) {
   });
 }
 
+function playMetrics(view) {
+  const S = view.size;
+  const d = S.play;
+  const halo = Math.max(4, Math.round(d * 0.04));
+  const x = S.w - S.marginX - d - halo;
+  const contentTop = S.marginTop;
+  const limit = S.h - S.rail - S.marginBottom;
+  let y = Math.round((contentTop + limit - d) / 2);
+  y = clamp(y, contentTop, Math.max(contentTop, limit - d));
+  return { x, y, w: d, h: d, cx: x + d / 2, cy: y + d / 2, d, halo };
+}
+
+function paintDuration(ctx, view, out, play) {
+  const label = String(view.duration || "").trim();
+  if (!view.showDuration || !label) return;
+  const S = view.size;
+  const size = S.key === "landscape" ? 16 : 18;
+  ctx.font = `800 ${size}px ${SETTINGS.fonts.family}`;
+  const tw = measureTracked(ctx, label, 0);
+  const padX = Math.round(size * 0.55);
+  const padY = Math.round(size * 0.35);
+  const w = tw + padX * 2;
+  const h = size + padY * 2;
+  const limit = S.h - S.rail - S.marginBottom;
+  let x = play.x + (play.w - w) / 2;
+  let y = play.y + play.h + Math.round(size * 0.7);
+  if (y + h > limit) y = limit - h;
+  x = clamp(x, S.marginX, S.w - S.marginX - w);
+  y = clamp(y, S.marginTop, Math.max(S.marginTop, limit - h));
+  roundRect(ctx, x, y, w, h, 3);
+  ctx.fillStyle = rgba(SETTINGS.brand.navy, 0.9);
+  ctx.fill();
+  ctx.font = `800 ${size}px ${SETTINGS.fonts.family}`;
+  ctx.fillStyle = SETTINGS.brand.white;
+  const probe = ctx.measureText(label);
+  const ascent = probe.actualBoundingBoxAscent || size * 0.78;
+  const descent = probe.actualBoundingBoxDescent || size * 0.2;
+  const baseline = y + padY + (size - ascent - descent) / 2 + ascent;
+  drawTracked(ctx, label, x + padX, baseline, 0);
+  out.boxes.push({
+    id: "duration", role: "text", kind: "line", text: label, weight: 800, size,
+    trackingEm: 0, x: x + padX, y: baseline - ascent, w: tw, h: ascent + descent,
+  });
+}
+
+function paintPlayButton(ctx, view, out) {
+  const play = playMetrics(view);
+  const halo = play.halo;
+  ctx.beginPath();
+  ctx.fillStyle = rgba(SETTINGS.brand.navy, 0.45);
+  ctx.arc(play.cx, play.cy, play.d / 2 + halo, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.fillStyle = SETTINGS.brand.white;
+  ctx.arc(play.cx, play.cy, play.d / 2, 0, Math.PI * 2);
+  ctx.fill();
+  const triH = play.d * 0.34;
+  const triW = play.d * 0.3;
+  const left = play.cx - triW * 0.32;
+  ctx.beginPath();
+  ctx.moveTo(left, play.cy - triH / 2);
+  ctx.lineTo(left + triW, play.cy);
+  ctx.lineTo(left, play.cy + triH / 2);
+  ctx.closePath();
+  ctx.fillStyle = SETTINGS.brand.red;
+  ctx.fill();
+  out.boxes.push({ id: "play", role: "text", x: play.x, y: play.y, w: play.w, h: play.h });
+  paintDuration(ctx, view, out, play);
+}
+
 function paintFrame(canvas, view) {
   const S = view.size;
   const theme = themeFor(view);
@@ -1742,7 +2028,8 @@ function paintFrame(canvas, view) {
   ctx.fillRect(0, 0, S.w, S.h);
   let photoBottom = 0;
   if (view.format === "announcement") photoBottom = paintAnnouncementPhoto(ctx, view);
-  if (view.format === "story") paintStoryPhoto(ctx, view);
+  if (view.format === "story" || view.format === "video") paintStoryPhoto(ctx, view);
+  if (view.format === "video") paintPlayButton(ctx, view, out);
   if (view.format === "statistic") paintWatermark(ctx, view, theme);
   if (view.format === "insight") paintTriangle(ctx, view, theme);
   drawLogo(ctx, view);
@@ -1755,7 +2042,7 @@ function paintFrame(canvas, view) {
   if (drawView.format === "announcement") paintAnnouncement(ctx, drawView, theme, out, footer.bodyBottom, photoBottom);
   if (drawView.format === "statistic") paintStatistic(ctx, drawView, theme, out, footer.bodyBottom);
   if (drawView.format === "insight") paintInsight(ctx, drawView, theme, out, footer.bodyBottom);
-  if (drawView.format === "story") paintStory(ctx, drawView, theme, out, footer.bodyBottom);
+  if (drawView.format === "story" || drawView.format === "video") paintStory(ctx, drawView, theme, out, footer.bodyBottom);
   if (drawView.format === "educational") paintEducational(ctx, drawView, theme, out, footer.bodyBottom);
   if (footer.sourcePlan && gapIsSet(drawView, "contextToSource")) {
     placeContextSource(ctx, drawView, theme, out, footer.sourcePlan);
@@ -1875,6 +2162,7 @@ function photoForState() {
   if (!state.useDefaultPhoto && state.photoImg) return state.photoImg;
   if (state.format === "story") return assets.hangar;
   if (state.format === "announcement") return assets.engine;
+  if (state.format === "video") return state.youtubeImg;
   return null;
 }
 
@@ -1905,6 +2193,8 @@ function buildView(sizeKey) {
     photoY: state.photoY,
     fade: state.fade,
     photo: photoForState(),
+    showDuration: state.showDuration,
+    duration: state.duration,
     desaturate: state.useDefaultPhoto && state.format === "announcement" ? SETTINGS.samples.announcement.desaturate : 0,
     labelGap: state.logoLabelSpacing[key],
     objectGaps: objectGapsForSize(key),
@@ -1952,18 +2242,40 @@ function renderNow() {
   const S = SETTINGS.sizes[state.size];
   $("specLine").textContent = `${S.w} × ${S.h} · ${SETTINGS.formats[state.format].label}`;
   $("preview").setAttribute("aria-label", `${SETTINGS.formats[state.format].label} preview, ${S.w} by ${S.h}`);
-  const usesPhoto = state.format === "announcement" || state.format === "story";
-  $("photoNote").hidden = !(usesPhoto && state.useDefaultPhoto);
-  $("photoNote").textContent = SETTINGS.ui.photoNote;
+  const stockPhoto = (state.format === "announcement" || state.format === "story") && state.useDefaultPhoto;
+  const videoNote = videoPhotoNote();
+  $("photoNote").hidden = !(stockPhoto || videoNote);
+  $("photoNote").className = state.format === "video" && state.youtubeStatus === "error" && state.useDefaultPhoto ? "warning" : "note";
+  $("photoNote").textContent = stockPhoto ? SETTINGS.ui.photoNote : videoNote;
+  if ($("youtubeError")) {
+    $("youtubeError").hidden = !state.youtubeError;
+    $("youtubeError").textContent = state.youtubeError || "";
+  }
+  if ($("durationWrap")) $("durationWrap").hidden = !state.showDuration;
   const status = $("status");
+  const videoProblem = state.format === "video" && state.useDefaultPhoto
+    ? (state.youtubeError || (state.youtubeStatus === "error" ? state.youtubeMessage : ""))
+    : "";
   if (lastLayout.warnings && lastLayout.warnings.length) {
     status.textContent = lastLayout.warnings[0];
+    status.classList.add("warn");
+  } else if (videoProblem) {
+    status.textContent = videoProblem;
     status.classList.add("warn");
   } else {
     status.textContent = `Ready · ${lastLayout.drawnHeadline} px headline · ${lastLayout.drawnSupport} px supporting`;
     status.classList.remove("warn");
   }
   updateOutputs();
+}
+
+function videoPhotoNote() {
+  if (state.format !== "video" || !state.useDefaultPhoto) return "";
+  if (state.youtubeError) return "";
+  if (state.youtubeStatus === "error") return state.youtubeMessage || SETTINGS.youtube.routeError;
+  if (state.youtubeStatus === "loading") return SETTINGS.youtube.loading;
+  if (!state.youtubeId) return SETTINGS.youtube.emptyHint;
+  return "";
 }
 
 function showWarnings(list) {
@@ -2084,9 +2396,12 @@ function loadSample(format, sizeKey) {
   if ($("photoFile")) $("photoFile").value = "";
   state.headlineSize = headlineRange(format, state.size).def;
   state.supportSize = SETTINGS.sizes[state.size].support.def;
+  state.showDuration = Boolean(sample.showDuration);
+  state.duration = sample.duration || "";
   state.logoLabelSpacing = freshLabelSpacing();
   state.objectGaps = freshObjectGaps();
   applyDefaultCrop();
+  setYouTubeLink(sample.youtube || "", { caption: format === "video", force: format === "video" });
   syncUI();
   renderNow();
 }
@@ -2111,6 +2426,14 @@ function syncUI() {
   $("exampleData").checked = state.exampleData;
   $("background").value = state.background || "paper";
   $("caption").value = state.caption;
+  if ($("youtubeUrl")) $("youtubeUrl").value = state.youtubeUrl || "";
+  if ($("showDuration")) $("showDuration").checked = Boolean(state.showDuration);
+  if ($("duration")) $("duration").value = state.duration || "";
+  if ($("durationWrap")) $("durationWrap").hidden = !state.showDuration;
+  if ($("youtubeError")) {
+    $("youtubeError").hidden = !state.youtubeError;
+    $("youtubeError").textContent = state.youtubeError || "";
+  }
   const range = headlineRange(state.format, state.size);
   const support = SETTINGS.sizes[state.size].support;
   $("headlineSize").min = range.min;
@@ -2137,6 +2460,8 @@ function syncUI() {
   $("stepsField").hidden = !spec.steps;
   $("photoField").hidden = !spec.photo;
   $("backgroundField").hidden = !spec.backgrounds;
+  if ($("videoField")) $("videoField").hidden = !spec.video;
+  if ($("removePhoto")) $("removePhoto").textContent = spec.video ? "Use the YouTube thumbnail" : "Use the default photo";
   $("headlineSizeLabel").textContent = spec.headlineSizeLabel || "Headline size";
   $("supportSizeLabel").textContent = spec.supportSizeLabel || "Supporting size";
   updateOutputs();
@@ -2213,6 +2538,11 @@ function readForm(event) {
     line: $(`step${i}Line`).value,
     icon: $(`step${i}Icon`).value,
   }));
+  if ($("showDuration")) state.showDuration = $("showDuration").checked;
+  if ($("duration")) state.duration = $("duration").value;
+  if ($("youtubeUrl") && $("youtubeUrl").value !== state.youtubeUrl) {
+    setYouTubeLink($("youtubeUrl").value, { caption: true });
+  }
 }
 
 function onSize(size) {
@@ -2257,6 +2587,9 @@ function snapshot() {
     useDefaultPhoto: state.useDefaultPhoto,
     photoData: state.useDefaultPhoto ? null : state.photoData,
     caption: state.caption,
+    youtubeUrl: state.youtubeUrl || "",
+    showDuration: Boolean(state.showDuration),
+    duration: state.duration || "",
     logoLabelSpacing: {
       landscape: state.logoLabelSpacing.landscape,
       square: state.logoLabelSpacing.square,
@@ -2356,6 +2689,17 @@ async function applyDesign(design) {
   next.objectGaps = normalizeObjectGaps(design && design.objectGaps);
   next.steps = (design.steps || next.steps).map((step) => ({ ...step }));
   next.photoImg = null;
+  next.youtubeUrl = typeof design.youtubeUrl === "string" ? design.youtubeUrl : "";
+  next.showDuration = Boolean(design && design.showDuration);
+  next.duration = typeof (design && design.duration) === "string" ? design.duration.slice(0, 12) : "";
+  next.youtubeId = "";
+  next.youtubeCanonical = "";
+  next.youtubeLoadedId = "";
+  next.youtubeImg = null;
+  next.youtubeStatus = "";
+  next.youtubeMessage = "";
+  next.youtubeError = "";
+  next.captionLinkedUrl = "";
   if (design.photoData && !design.useDefaultPhoto) {
     next.photoImg = await loadImage(design.photoData);
     next.useDefaultPhoto = false;
@@ -2363,7 +2707,10 @@ async function applyDesign(design) {
     next.useDefaultPhoto = true;
     next.photoData = null;
   }
+  const pendingLink = next.youtubeUrl;
+  next.youtubeUrl = "";
   state = next;
+  setYouTubeLink(pendingLink, { caption: next.format === "video", force: next.format === "video" });
   syncUI();
   renderNow();
 }
@@ -2634,10 +2981,18 @@ async function init() {
 window.AOG = {
   ready: false,
   SETTINGS,
-  getState: () => snapshot(),
+  getState: () => ({
+    ...snapshot(),
+    youtubeId: state.youtubeId,
+    youtubeStatus: state.youtubeStatus,
+    youtubeMessage: state.youtubeMessage,
+    youtubeCanonical: state.youtubeCanonical,
+    youtubeError: state.youtubeError,
+  }),
   getLayout: () => lastLayout,
   loadSample,
   renderNow,
+  parseYouTubeLink,
   measureLine(text, weight, size, trackingEm) {
     const ctx = $("preview").getContext("2d");
     ctx.font = `${weight} ${size}px ${SETTINGS.fonts.family}`;
